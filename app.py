@@ -39,13 +39,22 @@ def load_css(theme):
     if theme == "dark":
         bg_color = "#0e1117"
         text_color = "#fafafa"
-        card_bg = "#262730"
-        border_color = "#4a4a4a"
+        card_bg = "#1e1e1e"
+        card_text = "#fafafa"
+        border_color = "#333333"
+        kpi_value_color = "#7b8cff"
+        kpi_label_color = "#cccccc"
+        section_title_color = "#fafafa"
     else:
+        # Light theme (and default)
         bg_color = "#ffffff"
-        text_color = "#0e1117"
-        card_bg = "#f0f2f6"
-        border_color = "#e0e0e0"
+        text_color = "#1a1a1a"
+        card_bg = "#f8f9fa"
+        card_text = "#1a1a1a"
+        border_color = "#dee2e6"
+        kpi_value_color = "#4a5acd"
+        kpi_label_color = "#555555"
+        section_title_color = "#1a1a1a"
     
     st.markdown(f"""
         <style>
@@ -68,27 +77,45 @@ def load_css(theme):
             background: {card_bg};
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
             border: 1px solid {border_color};
             transition: transform 0.2s;
+            color: {card_text};
         }}
         
         .kpi-card:hover {{
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }}
+        
+        .kpi-card h3 {{
+            color: {card_text};
+            margin-bottom: 0.5rem;
+        }}
+        
+        .kpi-card p {{
+            color: {card_text};
+        }}
+        
+        .kpi-card ul {{
+            color: {card_text};
+        }}
+        
+        .kpi-card li {{
+            color: {card_text};
         }}
         
         .kpi-value {{
             font-size: 2rem;
             font-weight: 700;
-            color: #667eea;
+            color: {kpi_value_color};
             margin: 0.5rem 0;
         }}
         
         .kpi-label {{
             font-size: 0.875rem;
-            color: {text_color};
-            opacity: 0.7;
+            color: {kpi_label_color};
+            opacity: 0.85;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }}
@@ -119,7 +146,7 @@ def load_css(theme):
             font-size: 1.25rem;
             font-weight: 600;
             margin: 1rem 0;
-            color: {text_color};
+            color: {section_title_color};
         }}
         </style>
     """, unsafe_allow_html=True)
