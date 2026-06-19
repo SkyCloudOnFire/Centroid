@@ -47,7 +47,6 @@ def load_css(theme):
         section_title_color = "#fafafa"
         footer_color = "#cccccc"
     else:
-        # Light theme (and default)
         bg_color = "#ffffff"
         text_color = "#1a1a1a"
         card_bg = "#f8f9fa"
@@ -131,15 +130,28 @@ def load_css(theme):
         }}
         
         .stButton > button {{
-            border-radius: 8px;
-            padding: 0.5rem 1rem;
-            font-weight: 500;
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-weight: 400;
             transition: all 0.2s;
+            border: 1px solid {border_color};
+            background: {card_bg};
+            color: {card_text};
+            height: 100%;
+            min-height: 220px;
+            white-space: pre-line;
+            text-align: left;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            width: 100%;
         }}
         
         .stButton > button:hover {{
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+            background: {card_bg};
+            color: {card_text};
         }}
         
         .status-stable {{
@@ -164,39 +176,6 @@ def load_css(theme):
             opacity: 0.7;
             color: {footer_color};
         }}
-.big-nav-button {{
-    height: 100%;
-    min-height: 200px;
-    white-space: pre-line;
-    text-align: left;
-    padding: 1.5rem;
-    font-size: 1rem;
-    line-height: 1.6;
-    border-radius: 12px;
-}}
-
-.stButton > button {{
-    height: 100%;
-    min-height: 200px;
-    white-space: pre-line;
-    text-align: left;
-    padding: 1.5rem;
-    font-size: 1rem;
-    line-height: 1.6;
-    border-radius: 12px;
-    border: 1px solid {border_color};
-    background: {card_bg};
-    color: {card_text};
-    transition: all 0.2s;
-}}
-
-.stButton > button:hover {{
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-color: #667eea;
-    background: {card_bg};
-    color: {card_text};
-}}
         </style>
     """, unsafe_allow_html=True)
 
@@ -205,20 +184,22 @@ with st.sidebar:
     st.image("https://via.placeholder.com/150x50?text=COM+System", use_column_width=True)
     st.markdown("---")
     
+    # Initialize page in session state if not exists
+    if 'page' not in st.session_state:
+        st.session_state.page = "Home"
+    
     # Navigation
-    # Navigation - check if page was set by button click
-if 'page' not in st.session_state:
-    st.session_state.page = "Home"
-
-page = st.radio(
-    "Navigation",
-    ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
-    label_visibility="collapsed",
-    index=["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"].index(st.session_state.page)
-)
-
-# Update session state when radio changes
-st.session_state.page = page
+    page = st.radio(
+        "Navigation",
+        ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
+        label_visibility="collapsed",
+        index=["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"].index(st.session_state.page)
+    )
+    
+    # Update session state when radio changes
+    st.session_state.page = page
+    
+    st.markdown("---")
     
     # Theme selector
     theme = st.selectbox(
@@ -236,13 +217,10 @@ st.session_state.page = page
 
 # Apply theme with system detection
 if theme == "System":
-    # Streamlit's built-in theme detection
     try:
-        # Get the base theme from Streamlit config
         base_theme = st.get_option("theme.base")
         load_css(base_theme if base_theme else "light")
     except:
-        # Fallback to light if can't detect
         load_css("light")
 else:
     load_css(theme.lower())
@@ -257,7 +235,7 @@ st.markdown(f"""
     </div>
 """, unsafe_allow_html=True)
 
-# Initialize session state
+# Initialize session state for data
 if 'com_data' not in st.session_state:
     st.session_state.com_data = None
 if 'visualization_data' not in st.session_state:
@@ -270,20 +248,20 @@ if page == "Home":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔷 **2D Analysis**\n\nCalculate centroids for 2D shapes\n\n• Analytical formulas\n• Composite shapes\n• Coordinate input\n• Area calculation", 
-                     key="btn_2d", use_container_width=True, type="secondary"):
+        if st.button("🔷\n\n**2D Analysis**\n\nCalculate centroids for 2D shapes\n\n• Analytical formulas\n• Composite shapes\n• Coordinate input\n• Area calculation", 
+                     key="btn_2d", use_container_width=True):
             st.session_state.page = "2D Analysis"
             st.rerun()
     
     with col2:
-        if st.button("🔶 **3D Analysis**\n\nCompute center of mass for 3D solids\n\n• Cube, sphere, cylinder\n• Composite bodies\n• Volume calculation\n• 3D visualization", 
-                     key="btn_3d", use_container_width=True, type="secondary"):
+        if st.button("🔶\n\n**3D Analysis**\n\nCompute center of mass for 3D solids\n\n• Cube, sphere, cylinder\n• Composite bodies\n• Volume calculation\n• 3D visualization", 
+                     key="btn_3d", use_container_width=True):
             st.session_state.page = "3D Analysis"
             st.rerun()
     
     with col3:
-        if st.button("🔧 **STL Import**\n\nImport and analyze 3D mesh geometries\n\n• Mesh processing\n• Volume integration\n• Centroid calculation\n• Mesh statistics", 
-                     key="btn_stl", use_container_width=True, type="secondary"):
+        if st.button("🔧\n\n**STL Import**\n\nImport and analyze 3D mesh geometries\n\n• Mesh processing\n• Volume integration\n• Centroid calculation\n• Mesh statistics", 
+                     key="btn_stl", use_container_width=True):
             st.session_state.page = "STL Import"
             st.rerun()
     
