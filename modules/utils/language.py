@@ -21,7 +21,15 @@ class LanguageManager:
                 'calculate': 'Calculate',
                 'reset': 'Reset',
                 'export_pdf': 'Export PDF',
-                'export_csv': 'Export CSV'
+                'export_csv': 'Export CSV',
+                'quick_start_guide': 'Quick Start Guide',
+                'quick_start_steps': '''
+                    1. **Choose Analysis Type**: Select 2D or 3D analysis from the sidebar
+                    2. **Input Geometry**: Enter dimensions or import files
+                    3. **Calculate**: Click calculate to get results
+                    4. **Visualize**: Interact with real-time 3D visualization
+                    5. **Export**: Generate PDF reports or export data
+                '''
             },
             'Persian': {
                 'title': 'سیستم تحلیل مرکز جرم و مرکز سطح',
@@ -35,7 +43,15 @@ class LanguageManager:
                 'calculate': 'محاسبه',
                 'reset': 'بازنشانی',
                 'export_pdf': 'خروجی PDF',
-                'export_csv': 'خروجی CSV'
+                'export_csv': 'خروجی CSV',
+                'quick_start_guide': 'راهنمای شروع سریع',
+                'quick_start_steps': '''
+                    1. **نوع تحلیل را انتخاب کنید**: تحلیل دوبعدی یا سه بعدی را از نوار کناری انتخاب کنید
+                    2. **ورود هندسه**: ابعاد را وارد کنید یا فایل وارد کنید
+                    3. **محاسبه**: روی محاسبه کلیک کنید تا نتایج را ببینید
+                    4. **نمایش تصویری**: با نمایش سه بعدی تعاملی کار کنید
+                    5. **خروجی**: گزارش PDF تولید کنید یا داده‌ها را خروجی بگیرید
+                '''
             }
         }
     
