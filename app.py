@@ -45,6 +45,7 @@ def load_css(theme):
         kpi_value_color = "#7b8cff"
         kpi_label_color = "#cccccc"
         section_title_color = "#fafafa"
+        footer_color = "#cccccc"
     else:
         # Light theme (and default)
         bg_color = "#ffffff"
@@ -55,6 +56,7 @@ def load_css(theme):
         kpi_value_color = "#4a5acd"
         kpi_label_color = "#555555"
         section_title_color = "#1a1a1a"
+        footer_color = "#555555"
     
     st.markdown(f"""
         <style>
@@ -89,32 +91,40 @@ def load_css(theme):
         }}
         
         .kpi-card h3 {{
-            color: {card_text};
+            color: {card_text} !important;
             margin-bottom: 0.5rem;
         }}
         
+        .kpi-card h4 {{
+            color: {card_text} !important;
+        }}
+        
         .kpi-card p {{
-            color: {card_text};
+            color: {card_text} !important;
         }}
         
         .kpi-card ul {{
-            color: {card_text};
+            color: {card_text} !important;
         }}
         
         .kpi-card li {{
-            color: {card_text};
+            color: {card_text} !important;
+        }}
+        
+        .kpi-card div {{
+            color: {card_text} !important;
         }}
         
         .kpi-value {{
             font-size: 2rem;
             font-weight: 700;
-            color: {kpi_value_color};
+            color: {kpi_value_color} !important;
             margin: 0.5rem 0;
         }}
         
         .kpi-label {{
             font-size: 0.875rem;
-            color: {kpi_label_color};
+            color: {kpi_label_color} !important;
             opacity: 0.85;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -133,12 +143,12 @@ def load_css(theme):
         }}
         
         .status-stable {{
-            color: #10b981;
+            color: #10b981 !important;
             font-weight: 600;
         }}
         
         .status-unstable {{
-            color: #ef4444;
+            color: #ef4444 !important;
             font-weight: 600;
         }}
         
@@ -147,6 +157,12 @@ def load_css(theme):
             font-weight: 600;
             margin: 1rem 0;
             color: {section_title_color};
+        }}
+        
+        .footer-text {{
+            text-align: center;
+            opacity: 0.7;
+            color: {footer_color};
         }}
         </style>
     """, unsafe_allow_html=True)
@@ -179,8 +195,19 @@ with st.sidebar:
         key="language_selector"
     )
 
-# Apply theme
-load_css(theme.lower())
+# Apply theme with system detection
+if theme == "System":
+    # Streamlit's built-in theme detection
+    try:
+        # Get the base theme from Streamlit config
+        base_theme = st.get_option("theme.base")
+        load_css(base_theme if base_theme else "light")
+    except:
+        # Fallback to light if can't detect
+        load_css("light")
+else:
+    load_css(theme.lower())
+
 translations = lang_manager.get_translations(language)
 
 # Header
@@ -351,6 +378,7 @@ elif page == "2D Analysis":
                 if st.button("Add Component"):
                     component = Rectangle(w, h, cx, cy)
                     st.session_state.components.append(component)
+                    st.rerun()
             
             elif comp_type == "Circle":
                 r = st.number_input("Radius", min_value=0.1, value=2.0, key="comp_r")
@@ -360,6 +388,7 @@ elif page == "2D Analysis":
                 if st.button("Add Component"):
                     component = Circle(r, cx, cy)
                     st.session_state.components.append(component)
+                    st.rerun()
         
         # Display components
         if st.session_state.components:
@@ -371,7 +400,7 @@ elif page == "2D Analysis":
                 with col2:
                     if st.button("Remove", key=f"remove_{i}"):
                         st.session_state.components.pop(i)
-                        st.experimental_rerun()
+                        st.rerun()
             
             if st.button("Calculate Composite", type="primary"):
                 results = analyzer.analyze_composite_2d(st.session_state.components)
@@ -448,7 +477,7 @@ elif page == "3D Analysis":
     )
     
     if mode == "Simple Shapes":
-        shape_type = st.selectbox("Shape Type", ["Cube", "Sphere", "Cylinder", "Cone"])
+        shape_type = st.selectbox("Shape Type", ["Cube", "Box", "Sphere", "Cylinder", "Cone", "Pyramid"])
         
         col1, col2 = st.columns(2)
         
@@ -458,6 +487,12 @@ elif page == "3D Analysis":
                 width = st.number_input("Width", min_value=0.1, value=10.0)
                 height = st.number_input("Height", min_value=0.1, value=10.0)
                 shape = Cube(length, width, height)
+            
+            elif shape_type == "Box":
+                length = st.number_input("Length", min_value=0.1, value=8.0)
+                width = st.number_input("Width", min_value=0.1, value=6.0)
+                height = st.number_input("Height", min_value=0.1, value=4.0)
+                shape = Box(length, width, height)
             
             elif shape_type == "Sphere":
                 radius = st.number_input("Radius", min_value=0.1, value=5.0)
@@ -472,6 +507,12 @@ elif page == "3D Analysis":
                 radius = st.number_input("Base Radius", min_value=0.1, value=3.0)
                 height = st.number_input("Height", min_value=0.1, value=8.0)
                 shape = Cone(radius, height)
+            
+            elif shape_type == "Pyramid":
+                base_length = st.number_input("Base Length", min_value=0.1, value=6.0)
+                base_width = st.number_input("Base Width", min_value=0.1, value=6.0)
+                height = st.number_input("Height", min_value=0.1, value=8.0)
+                shape = Pyramid(base_length, base_width, height)
         
         with col2:
             pos_x = st.number_input("Position X", value=0.0)
@@ -532,7 +573,7 @@ elif page == "3D Analysis":
             st.markdown("---")
             st.markdown("### Stability Analysis")
             
-            if shape_type in ["Cube", "Cylinder"]:
+            if shape_type in ["Cube", "Box", "Cylinder"]:
                 # Simple stability check based on centroid height
                 if results['centroid_z'] < height/2:
                     stability = "Stable"
@@ -668,7 +709,7 @@ elif page == "Settings":
 # Footer
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; opacity: 0.7;'>"
+    "<div class='footer-text'>"
     "Center of Mass & Centroid Analysis System v1.0 | "
     "© 2024 Engineering Analysis Tools"
     "</div>",
