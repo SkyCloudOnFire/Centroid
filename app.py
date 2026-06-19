@@ -248,22 +248,22 @@ if page == "Home":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-    btn_text_2d = f"{translations['btn_2d_title']}\n\n{translations['btn_2d_desc']}\n\n{translations['btn_2d_list']}"
-    if st.button(btn_text_2d, key="btn_2d", use_container_width=True):
-        st.session_state.page = "2D Analysis"
-        st.rerun()
-
-with col2:
-    btn_text_3d = f"{translations['btn_3d_title']}\n\n{translations['btn_3d_desc']}\n\n{translations['btn_3d_list']}"
-    if st.button(btn_text_3d, key="btn_3d", use_container_width=True):
-        st.session_state.page = "3D Analysis"
-        st.rerun()
-
-with col3:
-    btn_text_stl = f"{translations['btn_stl_title']}\n\n{translations['btn_stl_desc']}\n\n{translations['btn_stl_list']}"
-    if st.button(btn_text_stl, key="btn_stl", use_container_width=True):
-        st.session_state.page = "STL Import"
-        st.rerun()
+        btn_text_2d = f"{translations['btn_2d_title']}\n\n{translations['btn_2d_desc']}\n\n{translations['btn_2d_list']}"
+        if st.button(btn_text_2d, key="btn_2d", use_container_width=True):
+            st.session_state.page = "2D Analysis"
+            st.rerun()
+    
+    with col2:
+        btn_text_3d = f"{translations['btn_3d_title']}\n\n{translations['btn_3d_desc']}\n\n{translations['btn_3d_list']}"
+        if st.button(btn_text_3d, key="btn_3d", use_container_width=True):
+            st.session_state.page = "3D Analysis"
+            st.rerun()
+    
+    with col3:
+        btn_text_stl = f"{translations['btn_stl_title']}\n\n{translations['btn_stl_desc']}\n\n{translations['btn_stl_list']}"
+        if st.button(btn_text_stl, key="btn_stl", use_container_width=True):
+            st.session_state.page = "STL Import"
+            st.rerun()
     
     st.markdown("---")
     
