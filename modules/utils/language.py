@@ -57,4 +57,4 @@ class LanguageManager:
     
     def get_translations(self, language: str) -> dict:
         """Get translations for a language"""
-        return self.translations.get(language, self.translations['English'])
+        return self.translations.get(language, self.translations['English']) 
