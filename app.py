@@ -13,7 +13,7 @@ from modules.utils.config import ConfigManager
 from modules.utils.theme import ThemeManager
 from modules.utils.language import LanguageManager
 from modules.geometry.shapes_2d import Rectangle, Circle, Triangle, Polygon
-from modules.geometry.shapes_3d import Cube, Sphere, Cylinder, Cone, Pyramid
+from modules.geometry.shapes_3d import Cube, Box, Sphere, Cylinder, Cone, Pyramid
 from modules.analysis.com_analyzer import COMAnalyzer
 from modules.visualization.plotter_2d import Plotter2D
 from modules.visualization.plotter_3d import Plotter3D
