@@ -45,6 +45,24 @@ class Cube(Shape3D):
         return self.position
 
 
+class Box(Shape3D):
+    """Box shape - rectangular prism (alias for Cube with clearer naming)"""
+    
+    def __init__(self, length: float, width: float, height: float,
+                 pos_x: float = 0, pos_y: float = 0, pos_z: float = 0):
+        super().__init__()
+        self.length = length
+        self.width = width
+        self.height = height
+        self.set_position(pos_x, pos_y, pos_z)
+    
+    def get_volume(self) -> float:
+        return self.length * self.width * self.height
+    
+    def get_centroid(self) -> Tuple[float, float, float]:
+        return self.position
+
+
 class Sphere(Shape3D):
     """Sphere shape"""
     
@@ -92,5 +110,25 @@ class Cone(Shape3D):
     
     def get_centroid(self) -> Tuple[float, float, float]:
         # Centroid of cone is at h/4 from base
+        cx, cy, cz = self.position
+        return (cx, cy, cz + self.height / 4)
+
+
+class Pyramid(Shape3D):
+    """Pyramid shape with rectangular base"""
+    
+    def __init__(self, base_length: float, base_width: float, height: float,
+                 pos_x: float = 0, pos_y: float = 0, pos_z: float = 0):
+        super().__init__()
+        self.base_length = base_length
+        self.base_width = base_width
+        self.height = height
+        self.set_position(pos_x, pos_y, pos_z)
+    
+    def get_volume(self) -> float:
+        return (1/3) * self.base_length * self.base_width * self.height
+    
+    def get_centroid(self) -> Tuple[float, float, float]:
+        # Centroid of pyramid is at h/4 from base
         cx, cy, cz = self.position
         return (cx, cy, cz + self.height / 4)
