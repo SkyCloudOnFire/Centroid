@@ -58,18 +58,70 @@ def load_css(theme, rtl=False):
         footer_color = "#555555"
     
     rtl_css = """
-        .rtl {
-            direction: rtl;
-            text-align: right;
+        /* RTL Override - Force entire body */
+        body {
+            direction: rtl !important;
+            text-align: right !important;
         }
-        .rtl .stMarkdown {
-            text-align: right;
+        .stApp {
+            direction: rtl !important;
         }
-        .rtl button {
-            text-align: right;
+        .stMarkdown {
+            text-align: right !important;
+            direction: rtl !important;
         }
-        .rtl .stButton > button {
-            text-align: right;
+        .stMarkdown p {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .stMarkdown ul, .stMarkdown ol {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .stMarkdown li {
+            text-align: right !important;
+        }
+        .stButton > button {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .stTextInput > div > div > input {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .stTextArea > div > div > textarea {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .stSelectbox > div > div {
+            direction: rtl !important;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            text-align: right !important;
+            direction: rtl !important;
+        }
+        .main-header {
+            text-align: right !important;
+        }
+        section[data-testid="stSidebar"] {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+        section[data-testid="stSidebar"] .stMarkdown {
+            text-align: right !important;
+        }
+        section[data-testid="stSidebar"] .stRadio > div {
+            direction: rtl !important;
+        }
+        div[data-testid="stHorizontalBlock"] {
+            direction: rtl !important;
+        }
+        .stMetric {
+            text-align: right !important;
+        }
+        .kpi-card {
+            text-align: right !important;
+            direction: rtl !important;
         }
     """ if rtl else ""
     
@@ -247,10 +299,6 @@ else:
     load_css(theme.lower(), is_rtl)
 
 translations = lang_manager.get_translations(language)
-
-# Apply RTL wrapper for Persian
-if is_rtl:
-    st.markdown('<div class="rtl">', unsafe_allow_html=True)
 
 # Header
 st.markdown(f"""
@@ -594,10 +642,6 @@ elif page == "Settings":
     marker_size = st.slider("Marker Size", 5, 20, 10)
     if st.button("Save Settings"):
         st.success("Settings saved successfully!")
-
-# Close RTL wrapper if open
-if is_rtl:
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
