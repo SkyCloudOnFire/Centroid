@@ -58,70 +58,50 @@ def load_css(theme, rtl=False):
         footer_color = "#555555"
     
     rtl_css = """
-        /* RTL Override - Force entire body */
-        body {
+        /* RTL for Persian text - content only, NOT layout */
+        .main-header {
             direction: rtl !important;
             text-align: right !important;
         }
-        .stApp {
+        .main-header h1 {
             direction: rtl !important;
-        }
-        .stMarkdown {
             text-align: right !important;
-            direction: rtl !important;
         }
-        .stMarkdown p {
-            text-align: right !important;
+        .main-header p {
             direction: rtl !important;
-        }
-        .stMarkdown ul, .stMarkdown ol {
-            text-align: right !important;
-            direction: rtl !important;
-        }
-        .stMarkdown li {
             text-align: right !important;
         }
         .stButton > button {
+            direction: rtl !important;
             text-align: right !important;
-            direction: rtl !important;
-        }
-        .stTextInput > div > div > input {
-            text-align: right !important;
-            direction: rtl !important;
-        }
-        .stTextArea > div > div > textarea {
-            text-align: right !important;
-            direction: rtl !important;
-        }
-        .stSelectbox > div > div {
-            direction: rtl !important;
         }
         h1, h2, h3, h4, h5, h6 {
-            text-align: right !important;
-            direction: rtl !important;
-        }
-        .main-header {
-            text-align: right !important;
-        }
-        section[data-testid="stSidebar"] {
             direction: rtl !important;
             text-align: right !important;
         }
-        section[data-testid="stSidebar"] .stMarkdown {
+        p {
+            direction: rtl !important;
             text-align: right !important;
         }
-        section[data-testid="stSidebar"] .stRadio > div {
+        ul, ol, li {
             direction: rtl !important;
-        }
-        div[data-testid="stHorizontalBlock"] {
-            direction: rtl !important;
-        }
-        .stMetric {
             text-align: right !important;
         }
         .kpi-card {
-            text-align: right !important;
             direction: rtl !important;
+            text-align: right !important;
+        }
+        .stMetric {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+        .stTextInput > div > div > input {
+            direction: rtl !important;
+            text-align: right !important;
+        }
+        .stTextArea > div > div > textarea {
+            direction: rtl !important;
+            text-align: right !important;
         }
     """ if rtl else ""
     
