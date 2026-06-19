@@ -173,13 +173,19 @@ with st.sidebar:
     st.markdown("---")
     
     # Navigation
-    page = st.radio(
-        "Navigation",
-        ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
-        label_visibility="collapsed"
-    )
-    
-    st.markdown("---")
+    # Navigation - check if page was set by button click
+if 'page' not in st.session_state:
+    st.session_state.page = "Home"
+
+page = st.radio(
+    "Navigation",
+    ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
+    label_visibility="collapsed",
+    index=["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"].index(st.session_state.page)
+)
+
+# Update session state when radio changes
+st.session_state.page = page
     
     # Theme selector
     theme = st.selectbox(
@@ -231,58 +237,28 @@ if page == "Home":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-            <div class="kpi-card">
-                <h3>🔷 2D Analysis</h3>
-                <p>Calculate centroids for 2D shapes including rectangles, circles, triangles, and custom polygons.</p>
-                <ul>
-                    <li>Analytical formulas</li>
-                    <li>Composite shapes</li>
-                    <li>Coordinate input</li>
-                    <li>Area calculation</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
+        if st.button("🔷 **2D Analysis**\n\nCalculate centroids for 2D shapes\n\n• Analytical formulas\n• Composite shapes\n• Coordinate input\n• Area calculation", 
+                     key="btn_2d", use_container_width=True, type="secondary"):
+            st.session_state.page = "2D Analysis"
+            st.rerun()
     
     with col2:
-        st.markdown("""
-            <div class="kpi-card">
-                <h3>🔶 3D Analysis</h3>
-                <p>Compute center of mass for 3D solids with uniform density assumption.</p>
-                <ul>
-                    <li>Cube, sphere, cylinder</li>
-                    <li>Composite bodies</li>
-                    <li>Volume calculation</li>
-                    <li>3D visualization</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
+        if st.button("🔶 **3D Analysis**\n\nCompute center of mass for 3D solids\n\n• Cube, sphere, cylinder\n• Composite bodies\n• Volume calculation\n• 3D visualization", 
+                     key="btn_3d", use_container_width=True, type="secondary"):
+            st.session_state.page = "3D Analysis"
+            st.rerun()
     
     with col3:
-        st.markdown("""
-            <div class="kpi-card">
-                <h3>🔧 STL Import</h3>
-                <p>Import and analyze arbitrary 3D mesh geometries from STL files.</p>
-                <ul>
-                    <li>Mesh processing</li>
-                    <li>Volume integration</li>
-                    <li>Centroid calculation</li>
-                    <li>Mesh statistics</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
+        if st.button("🔧 **STL Import**\n\nImport and analyze 3D mesh geometries\n\n• Mesh processing\n• Volume integration\n• Centroid calculation\n• Mesh statistics", 
+                     key="btn_stl", use_container_width=True, type="secondary"):
+            st.session_state.page = "STL Import"
+            st.rerun()
     
     st.markdown("---")
     
     # Quick start guide
-    st.markdown("## Quick Start Guide")
-    st.markdown("""
-    1. **Choose Analysis Type**: Select 2D or 3D analysis from the sidebar
-    2. **Input Geometry**: Enter dimensions or import files
-    3. **Calculate**: Click calculate to get results
-    4. **Visualize**: Interact with real-time 3D visualization
-    5. **Export**: Generate PDF reports or export data
-    """)
+    st.markdown(f"## {translations['quick_start_guide']}")
+    st.markdown(translations['quick_start_steps'])
 
 elif page == "2D Analysis":
     st.markdown(f"## {translations['2d_analysis']}")
