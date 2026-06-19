@@ -254,7 +254,7 @@ with st.sidebar:
     # Theme selector
     theme = st.selectbox(
         "Theme",
-        ["Light", "Dark", "System"],
+        ["Dark", "Light", "System"],
         key="theme_selector"
     )
     
