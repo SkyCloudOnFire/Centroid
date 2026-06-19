@@ -248,22 +248,22 @@ if page == "Home":
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🔷\n\n**2D Analysis**\n\nCalculate centroids for 2D shapes\n\n• Analytical formulas\n• Composite shapes\n• Coordinate input\n• Area calculation", 
-                     key="btn_2d", use_container_width=True):
-            st.session_state.page = "2D Analysis"
-            st.rerun()
-    
-    with col2:
-        if st.button("🔶\n\n**3D Analysis**\n\nCompute center of mass for 3D solids\n\n• Cube, sphere, cylinder\n• Composite bodies\n• Volume calculation\n• 3D visualization", 
-                     key="btn_3d", use_container_width=True):
-            st.session_state.page = "3D Analysis"
-            st.rerun()
-    
-    with col3:
-        if st.button("🔧\n\n**STL Import**\n\nImport and analyze 3D mesh geometries\n\n• Mesh processing\n• Volume integration\n• Centroid calculation\n• Mesh statistics", 
-                     key="btn_stl", use_container_width=True):
-            st.session_state.page = "STL Import"
-            st.rerun()
+    btn_text_2d = f"{translations['btn_2d_title']}\n\n{translations['btn_2d_desc']}\n\n{translations['btn_2d_list']}"
+    if st.button(btn_text_2d, key="btn_2d", use_container_width=True):
+        st.session_state.page = "2D Analysis"
+        st.rerun()
+
+with col2:
+    btn_text_3d = f"{translations['btn_3d_title']}\n\n{translations['btn_3d_desc']}\n\n{translations['btn_3d_list']}"
+    if st.button(btn_text_3d, key="btn_3d", use_container_width=True):
+        st.session_state.page = "3D Analysis"
+        st.rerun()
+
+with col3:
+    btn_text_stl = f"{translations['btn_stl_title']}\n\n{translations['btn_stl_desc']}\n\n{translations['btn_stl_list']}"
+    if st.button(btn_text_stl, key="btn_stl", use_container_width=True):
+        st.session_state.page = "STL Import"
+        st.rerun()
     
     st.markdown("---")
     
