@@ -164,6 +164,39 @@ def load_css(theme):
             opacity: 0.7;
             color: {footer_color};
         }}
+.big-nav-button {{
+    height: 100%;
+    min-height: 200px;
+    white-space: pre-line;
+    text-align: left;
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    border-radius: 12px;
+}}
+
+.stButton > button {{
+    height: 100%;
+    min-height: 200px;
+    white-space: pre-line;
+    text-align: left;
+    padding: 1.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    border-radius: 12px;
+    border: 1px solid {border_color};
+    background: {card_bg};
+    color: {card_text};
+    transition: all 0.2s;
+}}
+
+.stButton > button:hover {{
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
+    background: {card_bg};
+    color: {card_text};
+}}
         </style>
     """, unsafe_allow_html=True)
 
