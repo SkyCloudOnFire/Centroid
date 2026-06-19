@@ -181,7 +181,7 @@ def load_css(theme):
 
 # Sidebar navigation
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x50?text=COM+System", use_column_width=True)
+    st.image("https://via.placeholder.com/150x50?text=COM+System", width=150)
     st.markdown("---")
     
     # Initialize page in session state if not exists
