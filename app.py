@@ -34,7 +34,7 @@ st.set_page_config(
 )
 
 # Load custom CSS
-def load_css(theme):
+def load_css(theme, rtl=False):
     """Load custom CSS based on theme"""
     if theme == "dark":
         bg_color = "#0e1117"
@@ -56,6 +56,22 @@ def load_css(theme):
         kpi_label_color = "#555555"
         section_title_color = "#1a1a1a"
         footer_color = "#555555"
+    
+    rtl_css = """
+        .rtl {
+            direction: rtl;
+            text-align: right;
+        }
+        .rtl .stMarkdown {
+            text-align: right;
+        }
+        .rtl button {
+            text-align: right;
+        }
+        .rtl .stButton > button {
+            text-align: right;
+        }
+    """ if rtl else ""
     
     st.markdown(f"""
         <style>
@@ -176,6 +192,8 @@ def load_css(theme):
             opacity: 0.7;
             color: {footer_color};
         }}
+        
+        {rtl_css}
         </style>
     """, unsafe_allow_html=True)
 
@@ -215,17 +233,24 @@ with st.sidebar:
         key="language_selector"
     )
 
+# Check if RTL needed (Persian)
+is_rtl = (language == "Persian")
+
 # Apply theme with system detection
 if theme == "System":
     try:
         base_theme = st.get_option("theme.base")
-        load_css(base_theme if base_theme else "light")
+        load_css(base_theme if base_theme else "light", is_rtl)
     except:
-        load_css("light")
+        load_css("light", is_rtl)
 else:
-    load_css(theme.lower())
+    load_css(theme.lower(), is_rtl)
 
 translations = lang_manager.get_translations(language)
+
+# Apply RTL wrapper for Persian
+if is_rtl:
+    st.markdown('<div class="rtl">', unsafe_allow_html=True)
 
 # Header
 st.markdown(f"""
@@ -274,7 +299,6 @@ if page == "Home":
 elif page == "2D Analysis":
     st.markdown(f"## {translations['2d_analysis']}")
     
-    # Mode selection
     mode = st.radio(
         "Input Mode",
         ["Simple Shapes", "Composite Geometry", "Coordinate Input"],
@@ -293,11 +317,9 @@ elif page == "2D Analysis":
                 width = st.number_input("Width", min_value=0.1, value=10.0, step=0.1)
                 height = st.number_input("Height", min_value=0.1, value=5.0, step=0.1)
                 shape = Rectangle(width, height)
-            
             elif shape_type == "Circle":
                 radius = st.number_input("Radius", min_value=0.1, value=5.0, step=0.1)
                 shape = Circle(radius)
-            
             elif shape_type == "Triangle":
                 base = st.number_input("Base", min_value=0.1, value=6.0, step=0.1)
                 height = st.number_input("Height", min_value=0.1, value=4.0, step=0.1)
@@ -312,36 +334,14 @@ elif page == "2D Analysis":
             results = analyzer.analyze_2d(shape)
             st.session_state.com_data = results
             
-            # Display results
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Area</div>
-                        <div class="kpi-value">{results['area']:.2f}</div>
-                        <div>mm²</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Area</div><div class="kpi-value">{results["area"]:.2f}</div><div>mm²</div></div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Centroid X</div>
-                        <div class="kpi-value">{results['centroid_x']:.2f}</div>
-                        <div>mm</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Centroid X</div><div class="kpi-value">{results["centroid_x"]:.2f}</div><div>mm</div></div>', unsafe_allow_html=True)
             with col3:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Centroid Y</div>
-                        <div class="kpi-value">{results['centroid_y']:.2f}</div>
-                        <div>mm</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Centroid Y</div><div class="kpi-value">{results["centroid_y"]:.2f}</div><div>mm</div></div>', unsafe_allow_html=True)
             
-            # Visualization
             plotter = Plotter2D()
             fig = plotter.plot_shape_with_centroid(shape, results)
             st.plotly_chart(fig, use_container_width=True)
@@ -352,7 +352,6 @@ elif page == "2D Analysis":
         if 'components' not in st.session_state:
             st.session_state.components = []
         
-        # Add component
         with st.expander("Add Component", expanded=True):
             comp_type = st.selectbox("Component Type", ["Rectangle", "Circle", "Triangle"])
             
@@ -361,23 +360,19 @@ elif page == "2D Analysis":
                 h = st.number_input("Height", min_value=0.1, value=3.0, key="comp_h")
                 cx = st.number_input("Center X", value=0.0, key="comp_cx")
                 cy = st.number_input("Center Y", value=0.0, key="comp_cy")
-                
                 if st.button("Add Component"):
                     component = Rectangle(w, h, cx, cy)
                     st.session_state.components.append(component)
                     st.rerun()
-            
             elif comp_type == "Circle":
                 r = st.number_input("Radius", min_value=0.1, value=2.0, key="comp_r")
                 cx = st.number_input("Center X", value=0.0, key="comp_cx")
                 cy = st.number_input("Center Y", value=0.0, key="comp_cy")
-                
                 if st.button("Add Component"):
                     component = Circle(r, cx, cy)
                     st.session_state.components.append(component)
                     st.rerun()
         
-        # Display components
         if st.session_state.components:
             st.markdown("### Current Components")
             for i, comp in enumerate(st.session_state.components):
@@ -392,8 +387,6 @@ elif page == "2D Analysis":
             if st.button("Calculate Composite", type="primary"):
                 results = analyzer.analyze_composite_2d(st.session_state.components)
                 st.session_state.com_data = results
-                
-                # Display results
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Total Area", f"{results['total_area']:.2f} mm²")
@@ -401,15 +394,12 @@ elif page == "2D Analysis":
                     st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
                 with col3:
                     st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
-                
-                # Visualization
                 plotter = Plotter2D()
                 fig = plotter.plot_composite_with_centroid(st.session_state.components, results)
                 st.plotly_chart(fig, use_container_width=True)
     
     elif mode == "Coordinate Input":
         st.markdown("### Polygon Coordinate Input")
-        
         input_method = st.radio("Input Method", ["Manual Entry", "CSV Upload"])
         
         if input_method == "Manual Entry":
@@ -418,20 +408,16 @@ elif page == "2D Analysis":
                 "0,0\n10,0\n10,5\n5,8\n0,5",
                 height=150
             )
-            
             try:
                 coordinates = [
                     [float(x.strip()) for x in line.split(",")]
                     for line in coordinates_text.strip().split("\n")
                 ]
-                
                 if len(coordinates) >= 3:
                     polygon = Polygon(coordinates)
-                    
                     if st.button("Calculate", type="primary"):
                         results = analyzer.analyze_2d(polygon)
                         st.session_state.com_data = results
-                        
                         col1, col2, col3 = st.columns(3)
                         with col1:
                             st.metric("Area", f"{results['area']:.2f} mm²")
@@ -439,14 +425,11 @@ elif page == "2D Analysis":
                             st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
                         with col3:
                             st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
-                        
                         plotter = Plotter2D()
                         fig = plotter.plot_polygon_with_centroid(coordinates, results)
                         st.plotly_chart(fig, use_container_width=True)
-            
             except:
                 st.error("Invalid coordinate format")
-        
         else:
             uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
             if uploaded_file:
@@ -474,27 +457,22 @@ elif page == "3D Analysis":
                 width = st.number_input("Width", min_value=0.1, value=10.0)
                 height = st.number_input("Height", min_value=0.1, value=10.0)
                 shape = Cube(length, width, height)
-            
             elif shape_type == "Box":
                 length = st.number_input("Length", min_value=0.1, value=8.0)
                 width = st.number_input("Width", min_value=0.1, value=6.0)
                 height = st.number_input("Height", min_value=0.1, value=4.0)
                 shape = Box(length, width, height)
-            
             elif shape_type == "Sphere":
                 radius = st.number_input("Radius", min_value=0.1, value=5.0)
                 shape = Sphere(radius)
-            
             elif shape_type == "Cylinder":
                 radius = st.number_input("Radius", min_value=0.1, value=3.0)
                 height = st.number_input("Height", min_value=0.1, value=10.0)
                 shape = Cylinder(radius, height)
-            
             elif shape_type == "Cone":
                 radius = st.number_input("Base Radius", min_value=0.1, value=3.0)
                 height = st.number_input("Height", min_value=0.1, value=8.0)
                 shape = Cone(radius, height)
-            
             elif shape_type == "Pyramid":
                 base_length = st.number_input("Base Length", min_value=0.1, value=6.0)
                 base_width = st.number_input("Base Width", min_value=0.1, value=6.0)
@@ -512,56 +490,24 @@ elif page == "3D Analysis":
             results = analyzer.analyze_3d(shape)
             st.session_state.com_data = results
             
-            # Display results in KPI cards
             col1, col2, col3, col4 = st.columns(4)
-            
             with col1:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Volume</div>
-                        <div class="kpi-value">{results['volume']:.2f}</div>
-                        <div>mm³</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Volume</div><div class="kpi-value">{results["volume"]:.2f}</div><div>mm³</div></div>', unsafe_allow_html=True)
             with col2:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Centroid X</div>
-                        <div class="kpi-value">{results['centroid_x']:.2f}</div>
-                        <div>mm</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Centroid X</div><div class="kpi-value">{results["centroid_x"]:.2f}</div><div>mm</div></div>', unsafe_allow_html=True)
             with col3:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Centroid Y</div>
-                        <div class="kpi-value">{results['centroid_y']:.2f}</div>
-                        <div>mm</div>
-                    </div>
-                """, unsafe_allow_html=True)
-            
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Centroid Y</div><div class="kpi-value">{results["centroid_y"]:.2f}</div><div>mm</div></div>', unsafe_allow_html=True)
             with col4:
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <div class="kpi-label">Centroid Z</div>
-                        <div class="kpi-value">{results['centroid_z']:.2f}</div>
-                        <div>mm</div>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="kpi-card"><div class="kpi-label">Centroid Z</div><div class="kpi-value">{results["centroid_z"]:.2f}</div><div>mm</div></div>', unsafe_allow_html=True)
             
-            # 3D Visualization
             plotter = Plotter3D()
             fig = plotter.plot_3d_shape_with_centroid(shape, results)
             st.plotly_chart(fig, use_container_width=True)
             
-            # Stability check
             st.markdown("---")
             st.markdown("### Stability Analysis")
             
             if shape_type in ["Cube", "Box", "Cylinder"]:
-                # Simple stability check based on centroid height
                 if results['centroid_z'] < height/2:
                     stability = "Stable"
                     stability_class = "status-stable"
@@ -569,14 +515,7 @@ elif page == "3D Analysis":
                     stability = "Potentially Unstable"
                     stability_class = "status-unstable"
                 
-                st.markdown(f"""
-                    <div class="kpi-card">
-                        <h4>Stability Status: <span class="{stability_class}">{stability}</span></h4>
-                        <p>The centroid is located at a height of {results['centroid_z']:.2f} mm.
-                        {'This is within the support base, indicating stability.' if stability == 'Stable' 
-                          else 'The high center of mass may cause instability.'}</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div class="kpi-card"><h4>Stability Status: <span class="{stability_class}">{stability}</span></h4><p>The centroid is at height {results["centroid_z"]:.2f} mm.</p></div>', unsafe_allow_html=True)
 
 elif page == "STL Import":
     st.markdown(f"## {translations['stl_import']}")
@@ -585,11 +524,9 @@ elif page == "STL Import":
     
     if uploaded_file:
         mesh_handler = MeshHandler()
-        
         try:
             mesh_data = mesh_handler.load_stl(uploaded_file)
             
-            # Mesh statistics
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric("Vertices", mesh_data['num_vertices'])
@@ -598,7 +535,6 @@ elif page == "STL Import":
             with col3:
                 st.metric("Volume", f"{mesh_data['volume']:.2f} mm³")
             
-            # Centroid results
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Volume", f"{mesh_data['volume']:.2f}")
@@ -609,11 +545,9 @@ elif page == "STL Import":
             with col4:
                 st.metric("Centroid Z", f"{mesh_data['centroid'][2]:.2f}")
             
-            # 3D Visualization
             plotter = Plotter3D()
             fig = plotter.plot_mesh_with_centroid(mesh_data)
             st.plotly_chart(fig, use_container_width=True)
-            
         except Exception as e:
             st.error(f"Error processing STL file: {str(e)}")
 
@@ -624,12 +558,10 @@ elif page == "Report Generator":
         st.success("Analysis data available for report generation")
         
         col1, col2 = st.columns(2)
-        
         with col1:
             project_name = st.text_input("Project Name", "COM Analysis Project")
             engineer_name = st.text_input("Engineer Name", "")
             notes = st.text_area("Additional Notes", "")
-        
         with col2:
             include_visualization = st.checkbox("Include Visualizations", True)
             include_calculations = st.checkbox("Include Detailed Calculations", True)
@@ -638,60 +570,34 @@ elif page == "Report Generator":
         if st.button("Generate Report", type="primary"):
             with st.spinner("Generating report..."):
                 report_gen = ReportGenerator()
-                
                 if report_format == "PDF":
-                    pdf_bytes = report_gen.generate_pdf(
-                        st.session_state.com_data,
-                        project_name,
-                        engineer_name,
-                        notes
-                    )
-                    
-                    st.download_button(
-                        "Download PDF Report",
-                        pdf_bytes,
-                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
-                        "application/pdf"
-                    )
-                
+                    pdf_bytes = report_gen.generate_pdf(st.session_state.com_data, project_name, engineer_name, notes)
+                    st.download_button("Download PDF Report", pdf_bytes, f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf", "application/pdf")
                 elif report_format == "JSON":
                     json_str = report_gen.generate_json(st.session_state.com_data)
-                    
-                    st.download_button(
-                        "Download JSON Report",
-                        json_str,
-                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                        "application/json"
-                    )
-                
+                    st.download_button("Download JSON Report", json_str, f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "application/json")
                 elif report_format == "CSV":
                     csv_bytes = report_gen.generate_csv(st.session_state.com_data)
-                    
-                    st.download_button(
-                        "Download CSV Report",
-                        csv_bytes,
-                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        "text/csv"
-                    )
+                    st.download_button("Download CSV Report", csv_bytes, f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv", "text/csv")
     else:
         st.warning("No analysis data available. Please perform an analysis first.")
 
 elif page == "Settings":
     st.markdown(f"## {translations['settings']}")
-    
     st.markdown("### Unit System")
     unit_system = st.selectbox("Length Unit", ["mm", "cm", "m", "in"])
-    
     st.markdown("### Precision")
     decimal_places = st.slider("Decimal Places", 1, 6, 2)
-    
     st.markdown("### Visualization Settings")
     show_grid = st.checkbox("Show Grid", True)
     show_axes = st.checkbox("Show Axes", True)
     marker_size = st.slider("Marker Size", 5, 20, 10)
-    
     if st.button("Save Settings"):
         st.success("Settings saved successfully!")
+
+# Close RTL wrapper if open
+if is_rtl:
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
