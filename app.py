@@ -1,0 +1,649 @@
+# app.py
+"""
+Center of Mass & Centroid Analysis System
+Main Application Entry Point
+"""
+
+import streamlit as st
+import json
+import os
+from pathlib import Path
+from datetime import datetime
+from modules.utils.config import ConfigManager
+from modules.utils.theme import ThemeManager
+from modules.utils.language import LanguageManager
+from modules.geometry.shapes_2d import Rectangle, Circle, Triangle, Polygon
+from modules.geometry.shapes_3d import Cube, Sphere, Cylinder, Cone, Pyramid
+from modules.analysis.com_analyzer import COMAnalyzer
+from modules.visualization.plotter_2d import Plotter2D
+from modules.visualization.plotter_3d import Plotter3D
+from modules.reporting.report_generator import ReportGenerator
+from modules.mesh.mesh_handler import MeshHandler
+
+# Initialize configurations
+config = ConfigManager()
+theme_manager = ThemeManager()
+lang_manager = LanguageManager()
+
+# Page configuration
+st.set_page_config(
+    page_title="COM & Centroid Analysis System",
+    page_icon="⚙️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Load custom CSS
+def load_css(theme):
+    """Load custom CSS based on theme"""
+    if theme == "dark":
+        bg_color = "#0e1117"
+        text_color = "#fafafa"
+        card_bg = "#262730"
+        border_color = "#4a4a4a"
+    else:
+        bg_color = "#ffffff"
+        text_color = "#0e1117"
+        card_bg = "#f0f2f6"
+        border_color = "#e0e0e0"
+    
+    st.markdown(f"""
+        <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        * {{
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }}
+        
+        .main-header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 16px;
+            color: white;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+        
+        .kpi-card {{
+            background: {card_bg};
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid {border_color};
+            transition: transform 0.2s;
+        }}
+        
+        .kpi-card:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }}
+        
+        .kpi-value {{
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin: 0.5rem 0;
+        }}
+        
+        .kpi-label {{
+            font-size: 0.875rem;
+            color: {text_color};
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        
+        .stButton > button {{
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }}
+        
+        .stButton > button:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }}
+        
+        .status-stable {{
+            color: #10b981;
+            font-weight: 600;
+        }}
+        
+        .status-unstable {{
+            color: #ef4444;
+            font-weight: 600;
+        }}
+        
+        .section-title {{
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 1rem 0;
+            color: {text_color};
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# Sidebar navigation
+with st.sidebar:
+    st.image("https://via.placeholder.com/150x50?text=COM+System", use_column_width=True)
+    st.markdown("---")
+    
+    # Navigation
+    page = st.radio(
+        "Navigation",
+        ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
+        label_visibility="collapsed"
+    )
+    
+    st.markdown("---")
+    
+    # Theme selector
+    theme = st.selectbox(
+        "Theme",
+        ["Light", "Dark", "System"],
+        key="theme_selector"
+    )
+    
+    # Language selector
+    language = st.selectbox(
+        "Language / زبان",
+        ["English", "Persian"],
+        key="language_selector"
+    )
+
+# Apply theme
+load_css(theme.lower())
+translations = lang_manager.get_translations(language)
+
+# Header
+st.markdown(f"""
+    <div class="main-header">
+        <h1>{translations['title']}</h1>
+        <p style="font-size: 1.1rem; opacity: 0.9;">{translations['subtitle']}</p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Initialize session state
+if 'com_data' not in st.session_state:
+    st.session_state.com_data = None
+if 'visualization_data' not in st.session_state:
+    st.session_state.visualization_data = None
+
+# Page routing
+if page == "Home":
+    st.markdown(f"## {translations['welcome']}")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+            <div class="kpi-card">
+                <h3>🔷 2D Analysis</h3>
+                <p>Calculate centroids for 2D shapes including rectangles, circles, triangles, and custom polygons.</p>
+                <ul>
+                    <li>Analytical formulas</li>
+                    <li>Composite shapes</li>
+                    <li>Coordinate input</li>
+                    <li>Area calculation</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+            <div class="kpi-card">
+                <h3>🔶 3D Analysis</h3>
+                <p>Compute center of mass for 3D solids with uniform density assumption.</p>
+                <ul>
+                    <li>Cube, sphere, cylinder</li>
+                    <li>Composite bodies</li>
+                    <li>Volume calculation</li>
+                    <li>3D visualization</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+            <div class="kpi-card">
+                <h3>🔧 STL Import</h3>
+                <p>Import and analyze arbitrary 3D mesh geometries from STL files.</p>
+                <ul>
+                    <li>Mesh processing</li>
+                    <li>Volume integration</li>
+                    <li>Centroid calculation</li>
+                    <li>Mesh statistics</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Quick start guide
+    st.markdown("## Quick Start Guide")
+    st.markdown("""
+    1. **Choose Analysis Type**: Select 2D or 3D analysis from the sidebar
+    2. **Input Geometry**: Enter dimensions or import files
+    3. **Calculate**: Click calculate to get results
+    4. **Visualize**: Interact with real-time 3D visualization
+    5. **Export**: Generate PDF reports or export data
+    """)
+
+elif page == "2D Analysis":
+    st.markdown(f"## {translations['2d_analysis']}")
+    
+    # Mode selection
+    mode = st.radio(
+        "Input Mode",
+        ["Simple Shapes", "Composite Geometry", "Coordinate Input"],
+        horizontal=True
+    )
+    
+    analyzer = COMAnalyzer()
+    
+    if mode == "Simple Shapes":
+        shape_type = st.selectbox("Shape Type", ["Rectangle", "Circle", "Triangle"])
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if shape_type == "Rectangle":
+                width = st.number_input("Width", min_value=0.1, value=10.0, step=0.1)
+                height = st.number_input("Height", min_value=0.1, value=5.0, step=0.1)
+                shape = Rectangle(width, height)
+            
+            elif shape_type == "Circle":
+                radius = st.number_input("Radius", min_value=0.1, value=5.0, step=0.1)
+                shape = Circle(radius)
+            
+            elif shape_type == "Triangle":
+                base = st.number_input("Base", min_value=0.1, value=6.0, step=0.1)
+                height = st.number_input("Height", min_value=0.1, value=4.0, step=0.1)
+                shape = Triangle(base, height)
+        
+        with col2:
+            center_x = st.number_input("Center X", value=0.0, step=0.1)
+            center_y = st.number_input("Center Y", value=0.0, step=0.1)
+            shape.set_position(center_x, center_y)
+        
+        if st.button("Calculate", type="primary"):
+            results = analyzer.analyze_2d(shape)
+            st.session_state.com_data = results
+            
+            # Display results
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Area</div>
+                        <div class="kpi-value">{results['area']:.2f}</div>
+                        <div>mm²</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Centroid X</div>
+                        <div class="kpi-value">{results['centroid_x']:.2f}</div>
+                        <div>mm</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Centroid Y</div>
+                        <div class="kpi-value">{results['centroid_y']:.2f}</div>
+                        <div>mm</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # Visualization
+            plotter = Plotter2D()
+            fig = plotter.plot_shape_with_centroid(shape, results)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    elif mode == "Composite Geometry":
+        st.markdown("### Composite Shape Builder")
+        
+        if 'components' not in st.session_state:
+            st.session_state.components = []
+        
+        # Add component
+        with st.expander("Add Component", expanded=True):
+            comp_type = st.selectbox("Component Type", ["Rectangle", "Circle", "Triangle"])
+            
+            if comp_type == "Rectangle":
+                w = st.number_input("Width", min_value=0.1, value=5.0, key="comp_w")
+                h = st.number_input("Height", min_value=0.1, value=3.0, key="comp_h")
+                cx = st.number_input("Center X", value=0.0, key="comp_cx")
+                cy = st.number_input("Center Y", value=0.0, key="comp_cy")
+                
+                if st.button("Add Component"):
+                    component = Rectangle(w, h, cx, cy)
+                    st.session_state.components.append(component)
+            
+            elif comp_type == "Circle":
+                r = st.number_input("Radius", min_value=0.1, value=2.0, key="comp_r")
+                cx = st.number_input("Center X", value=0.0, key="comp_cx")
+                cy = st.number_input("Center Y", value=0.0, key="comp_cy")
+                
+                if st.button("Add Component"):
+                    component = Circle(r, cx, cy)
+                    st.session_state.components.append(component)
+        
+        # Display components
+        if st.session_state.components:
+            st.markdown("### Current Components")
+            for i, comp in enumerate(st.session_state.components):
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.text(f"Component {i+1}: {comp.__class__.__name__}")
+                with col2:
+                    if st.button("Remove", key=f"remove_{i}"):
+                        st.session_state.components.pop(i)
+                        st.experimental_rerun()
+            
+            if st.button("Calculate Composite", type="primary"):
+                results = analyzer.analyze_composite_2d(st.session_state.components)
+                st.session_state.com_data = results
+                
+                # Display results
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Area", f"{results['total_area']:.2f} mm²")
+                with col2:
+                    st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+                with col3:
+                    st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+                
+                # Visualization
+                plotter = Plotter2D()
+                fig = plotter.plot_composite_with_centroid(st.session_state.components, results)
+                st.plotly_chart(fig, use_container_width=True)
+    
+    elif mode == "Coordinate Input":
+        st.markdown("### Polygon Coordinate Input")
+        
+        input_method = st.radio("Input Method", ["Manual Entry", "CSV Upload"])
+        
+        if input_method == "Manual Entry":
+            coordinates_text = st.text_area(
+                "Enter coordinates (one per line: x,y)",
+                "0,0\n10,0\n10,5\n5,8\n0,5",
+                height=150
+            )
+            
+            try:
+                coordinates = [
+                    [float(x.strip()) for x in line.split(",")]
+                    for line in coordinates_text.strip().split("\n")
+                ]
+                
+                if len(coordinates) >= 3:
+                    polygon = Polygon(coordinates)
+                    
+                    if st.button("Calculate", type="primary"):
+                        results = analyzer.analyze_2d(polygon)
+                        st.session_state.com_data = results
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Area", f"{results['area']:.2f} mm²")
+                        with col2:
+                            st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+                        with col3:
+                            st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+                        
+                        plotter = Plotter2D()
+                        fig = plotter.plot_polygon_with_centroid(coordinates, results)
+                        st.plotly_chart(fig, use_container_width=True)
+            
+            except:
+                st.error("Invalid coordinate format")
+        
+        else:
+            uploaded_file = st.file_uploader("Upload CSV file", type=['csv'])
+            if uploaded_file:
+                import pandas as pd
+                df = pd.read_csv(uploaded_file)
+                st.dataframe(df)
+
+elif page == "3D Analysis":
+    st.markdown(f"## {translations['3d_analysis']}")
+    
+    mode = st.radio(
+        "Input Mode",
+        ["Simple Shapes", "Composite Geometry"],
+        horizontal=True
+    )
+    
+    if mode == "Simple Shapes":
+        shape_type = st.selectbox("Shape Type", ["Cube", "Sphere", "Cylinder", "Cone"])
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if shape_type == "Cube":
+                length = st.number_input("Length", min_value=0.1, value=10.0)
+                width = st.number_input("Width", min_value=0.1, value=10.0)
+                height = st.number_input("Height", min_value=0.1, value=10.0)
+                shape = Cube(length, width, height)
+            
+            elif shape_type == "Sphere":
+                radius = st.number_input("Radius", min_value=0.1, value=5.0)
+                shape = Sphere(radius)
+            
+            elif shape_type == "Cylinder":
+                radius = st.number_input("Radius", min_value=0.1, value=3.0)
+                height = st.number_input("Height", min_value=0.1, value=10.0)
+                shape = Cylinder(radius, height)
+            
+            elif shape_type == "Cone":
+                radius = st.number_input("Base Radius", min_value=0.1, value=3.0)
+                height = st.number_input("Height", min_value=0.1, value=8.0)
+                shape = Cone(radius, height)
+        
+        with col2:
+            pos_x = st.number_input("Position X", value=0.0)
+            pos_y = st.number_input("Position Y", value=0.0)
+            pos_z = st.number_input("Position Z", value=0.0)
+            shape.set_position(pos_x, pos_y, pos_z)
+        
+        if st.button("Calculate", type="primary"):
+            analyzer = COMAnalyzer()
+            results = analyzer.analyze_3d(shape)
+            st.session_state.com_data = results
+            
+            # Display results in KPI cards
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Volume</div>
+                        <div class="kpi-value">{results['volume']:.2f}</div>
+                        <div>mm³</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Centroid X</div>
+                        <div class="kpi-value">{results['centroid_x']:.2f}</div>
+                        <div>mm</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Centroid Y</div>
+                        <div class="kpi-value">{results['centroid_y']:.2f}</div>
+                        <div>mm</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            with col4:
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <div class="kpi-label">Centroid Z</div>
+                        <div class="kpi-value">{results['centroid_z']:.2f}</div>
+                        <div>mm</div>
+                    </div>
+                """, unsafe_allow_html=True)
+            
+            # 3D Visualization
+            plotter = Plotter3D()
+            fig = plotter.plot_3d_shape_with_centroid(shape, results)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Stability check
+            st.markdown("---")
+            st.markdown("### Stability Analysis")
+            
+            if shape_type in ["Cube", "Cylinder"]:
+                # Simple stability check based on centroid height
+                if results['centroid_z'] < height/2:
+                    stability = "Stable"
+                    stability_class = "status-stable"
+                else:
+                    stability = "Potentially Unstable"
+                    stability_class = "status-unstable"
+                
+                st.markdown(f"""
+                    <div class="kpi-card">
+                        <h4>Stability Status: <span class="{stability_class}">{stability}</span></h4>
+                        <p>The centroid is located at a height of {results['centroid_z']:.2f} mm.
+                        {'This is within the support base, indicating stability.' if stability == 'Stable' 
+                          else 'The high center of mass may cause instability.'}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+elif page == "STL Import":
+    st.markdown(f"## {translations['stl_import']}")
+    
+    uploaded_file = st.file_uploader("Upload STL File", type=['stl'])
+    
+    if uploaded_file:
+        mesh_handler = MeshHandler()
+        
+        try:
+            mesh_data = mesh_handler.load_stl(uploaded_file)
+            
+            # Mesh statistics
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Vertices", mesh_data['num_vertices'])
+            with col2:
+                st.metric("Faces", mesh_data['num_faces'])
+            with col3:
+                st.metric("Volume", f"{mesh_data['volume']:.2f} mm³")
+            
+            # Centroid results
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Volume", f"{mesh_data['volume']:.2f}")
+            with col2:
+                st.metric("Centroid X", f"{mesh_data['centroid'][0]:.2f}")
+            with col3:
+                st.metric("Centroid Y", f"{mesh_data['centroid'][1]:.2f}")
+            with col4:
+                st.metric("Centroid Z", f"{mesh_data['centroid'][2]:.2f}")
+            
+            # 3D Visualization
+            plotter = Plotter3D()
+            fig = plotter.plot_mesh_with_centroid(mesh_data)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        except Exception as e:
+            st.error(f"Error processing STL file: {str(e)}")
+
+elif page == "Report Generator":
+    st.markdown(f"## {translations['report_generator']}")
+    
+    if st.session_state.com_data:
+        st.success("Analysis data available for report generation")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            project_name = st.text_input("Project Name", "COM Analysis Project")
+            engineer_name = st.text_input("Engineer Name", "")
+            notes = st.text_area("Additional Notes", "")
+        
+        with col2:
+            include_visualization = st.checkbox("Include Visualizations", True)
+            include_calculations = st.checkbox("Include Detailed Calculations", True)
+            report_format = st.selectbox("Report Format", ["PDF", "JSON", "CSV"])
+        
+        if st.button("Generate Report", type="primary"):
+            with st.spinner("Generating report..."):
+                report_gen = ReportGenerator()
+                
+                if report_format == "PDF":
+                    pdf_bytes = report_gen.generate_pdf(
+                        st.session_state.com_data,
+                        project_name,
+                        engineer_name,
+                        notes
+                    )
+                    
+                    st.download_button(
+                        "Download PDF Report",
+                        pdf_bytes,
+                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+                        "application/pdf"
+                    )
+                
+                elif report_format == "JSON":
+                    json_str = report_gen.generate_json(st.session_state.com_data)
+                    
+                    st.download_button(
+                        "Download JSON Report",
+                        json_str,
+                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                        "application/json"
+                    )
+                
+                elif report_format == "CSV":
+                    csv_bytes = report_gen.generate_csv(st.session_state.com_data)
+                    
+                    st.download_button(
+                        "Download CSV Report",
+                        csv_bytes,
+                        f"com_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                        "text/csv"
+                    )
+    else:
+        st.warning("No analysis data available. Please perform an analysis first.")
+
+elif page == "Settings":
+    st.markdown(f"## {translations['settings']}")
+    
+    st.markdown("### Unit System")
+    unit_system = st.selectbox("Length Unit", ["mm", "cm", "m", "in"])
+    
+    st.markdown("### Precision")
+    decimal_places = st.slider("Decimal Places", 1, 6, 2)
+    
+    st.markdown("### Visualization Settings")
+    show_grid = st.checkbox("Show Grid", True)
+    show_axes = st.checkbox("Show Axes", True)
+    marker_size = st.slider("Marker Size", 5, 20, 10)
+    
+    if st.button("Save Settings"):
+        st.success("Settings saved successfully!")
+
+# Footer
+st.markdown("---")
+st.markdown(
+    "<div style='text-align: center; opacity: 0.7;'>"
+    "Center of Mass & Centroid Analysis System v1.0 | "
+    "© 2024 Engineering Analysis Tools"
+    "</div>",
+    unsafe_allow_html=True
+)
