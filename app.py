@@ -145,43 +145,47 @@ with st.sidebar:
     if 'language' not in st.session_state:
         st.session_state.language = "English"
     
-    # Get current language for sidebar display
+    # Always use English for internal page keys, translate display only
     current_lang = st.session_state.language
     _t = lang_manager.get_translations(current_lang)
     
-    nav_options = [_t['nav_home'], _t['nav_2d'], _t['nav_3d'], _t['nav_stl'], _t['nav_report'], _t['nav_settings']]
+    # Internal keys (never change)
     nav_internal = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
+    # Display labels (translated)
+    nav_display = [_t['nav_home'], _t['nav_2d'], _t['nav_3d'], _t['nav_stl'], _t['nav_report'], _t['nav_settings']]
     
     if st.session_state.page not in nav_internal:
         st.session_state.page = "Home"
     
     page_idx = nav_internal.index(st.session_state.page)
-    page_label = st.radio(
+    
+    # Use selectbox instead of radio to avoid key issues
+    page_display = st.selectbox(
         _t['nav_label'],
-        nav_options,
-        label_visibility="collapsed",
-        index=page_idx
+        nav_display,
+        index=page_idx,
+        label_visibility="collapsed"
     )
-    st.session_state.page = nav_internal[nav_options.index(page_label)]
-    page = st.session_state.page
+    
+    # Map display back to internal
+    page = nav_internal[nav_display.index(page_display)]
+    st.session_state.page = page
     
     st.markdown("---")
     
     # Theme selector
     theme_display = st.selectbox(
         _t['theme'], 
-        [_t['theme_dark'], _t['theme_light'], _t['theme_system']], 
-        key="theme_selector_display"
+        [_t['theme_dark'], _t['theme_light'], _t['theme_system']]
     )
     
-    # Language selector - stores display value, we map it
+    # Language selector
     lang_display = st.selectbox(
         _t['language_label'], 
-        [_t['lang_english'], _t['lang_persian']], 
-        key="language_selector_display"
+        [_t['lang_english'], _t['lang_persian']]
     )
     
-    # Map display values to internal keys
+    # Map to internal
     if lang_display == _t['lang_persian']:
         st.session_state.language = "Persian"
     else:
