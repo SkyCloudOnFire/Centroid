@@ -142,10 +142,12 @@ with st.sidebar:
     
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
+    if 'language' not in st.session_state:
+        st.session_state.language = "English"
     
-    # Get translations early for sidebar
-    _lang = st.session_state.get('language', 'English')
-    _t = lang_manager.get_translations(_lang)
+    # Get current language for sidebar display
+    current_lang = st.session_state.language
+    _t = lang_manager.get_translations(current_lang)
     
     nav_options = [_t['nav_home'], _t['nav_2d'], _t['nav_3d'], _t['nav_stl'], _t['nav_report'], _t['nav_settings']]
     nav_internal = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
@@ -165,16 +167,35 @@ with st.sidebar:
     
     st.markdown("---")
     
-    theme = st.selectbox(_t['theme'], [_t['theme_dark'], _t['theme_light'], _t['theme_system']], key="theme_selector")
-    language = st.selectbox(_t['language_label'], [_t['lang_english'], _t['lang_persian']], key="language_selector")
-    st.session_state.language = language
+    # Theme selector
+    theme_display = st.selectbox(
+        _t['theme'], 
+        [_t['theme_dark'], _t['theme_light'], _t['theme_system']], 
+        key="theme_selector_display"
+    )
+    
+    # Language selector - stores display value, we map it
+    lang_display = st.selectbox(
+        _t['language_label'], 
+        [_t['lang_english'], _t['lang_persian']], 
+        key="language_selector_display"
+    )
+    
+    # Map display values to internal keys
+    if lang_display == _t['lang_persian']:
+        st.session_state.language = "Persian"
+    else:
+        st.session_state.language = "English"
+    
+    if theme_display == _t['theme_dark']:
+        theme = "Dark"
+    elif theme_display == _t['theme_light']:
+        theme = "Light"
+    else:
+        theme = "System"
 
-# Map theme/language back to internal names
-theme_map = {_t['theme_dark']: 'Dark', _t['theme_light']: 'Light', _t['theme_system']: 'System'}
-lang_map = {_t['lang_english']: 'English', _t['lang_persian']: 'Persian'}
-theme = theme_map.get(theme, 'Dark')
-language = lang_map.get(language, 'English')
-
+# Get final translations after language is set
+language = st.session_state.language
 is_rtl = (language == "Persian")
 
 if theme == "System":
@@ -187,7 +208,7 @@ else:
     load_css(theme.lower(), is_rtl)
 
 translations = lang_manager.get_translations(language)
-t = translations  # shortcut
+t = translations
 
 st.markdown(f"""
     <div class="main-header">
