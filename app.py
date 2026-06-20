@@ -793,7 +793,7 @@ elif page == "Report Generator":
                         engineer_name, 
                         notes,
                         st.session_state.get('preview_image', None),
-                        t
+                        translations 
                     )
                     st.download_button(t['download_pdf'], pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
                 elif report_format == "JSON":
