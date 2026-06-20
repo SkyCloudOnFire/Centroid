@@ -430,17 +430,26 @@ elif page == "2D Analysis":
                 })
             
             df = pd.DataFrame(table_data)
-            st.dataframe(df, use_container_width=True, hide_index=True)
             
-            # Delete by selecting from radio
-            st.markdown("#### Select component to delete:")
-            delete_options = [f"#{i+1} - {comp['type']} at ({comp['shape'].get_centroid()[0]:.1f}, {comp['shape'].get_centroid()[1]:.1f})" for i, comp in enumerate(st.session_state.components)]
-            selected = st.radio("Select:", delete_options, label_visibility="collapsed", key="delete_radio")
+            # Click row to select, then delete
+            st.markdown("#### Click a row to select, then press delete:")
+            selection = st.dataframe(
+                df, 
+                use_container_width=True, 
+                hide_index=True,
+                selection_mode="single-row",
+                on_select="rerun",
+                key="component_table"
+            )
             
-            if st.button("🗑️ Delete Selected"):
-                selected_index = delete_options.index(selected)
-                st.session_state.components.pop(selected_index)
-                st.rerun()
+            if selection.selection.rows:
+                selected_row = selection.selection.rows[0]
+                col_del, col_spacer = st.columns([1, 3])
+                with col_del:
+                    if st.button("🗑️ Delete Selected", type="secondary"):
+                        st.session_state.components.pop(selected_row)
+                        st.rerun()
+                st.info(f"Selected: #{selected_row + 1} - {st.session_state.components[selected_row]['type']}")
             
             # LIVE PREVIEW
             st.markdown("### Live Preview")
