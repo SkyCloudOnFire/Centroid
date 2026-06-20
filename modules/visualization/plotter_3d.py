@@ -60,6 +60,29 @@ class Plotter3D:
             textfont=dict(size=10, color='red')
         ))
     
+    def _get_isometric_layout(self, title: str) -> dict:
+        """Get standard isometric layout for engineering views"""
+        return dict(
+            title=title,
+            scene=dict(
+                xaxis_title="X (mm)",
+                yaxis_title="Y (mm)",
+                zaxis_title="Z (mm)",
+                aspectmode='data',
+                camera=dict(
+                    eye=dict(x=1.8, y=1.8, z=1.8),  # True isometric
+                    up=dict(x=0, y=0, z=1)
+                ),
+                xaxis=dict(showgrid=True, gridcolor='lightgray'),
+                yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                zaxis=dict(showgrid=True, gridcolor='lightgray'),
+            ),
+            showlegend=True,
+            template="plotly_white",
+            margin=dict(l=0, r=0, t=50, b=0),
+            paper_bgcolor='white',
+        )
+    
     def plot_3d_shape_with_centroid(self, shape, results: Dict[str, Any]) -> go.Figure:
         """Plot a single 3D shape as solid with centroid"""
         fig = go.Figure()
@@ -71,7 +94,7 @@ class Plotter3D:
             fig.add_trace(self._mesh_to_plotly(
                 mesh, 
                 color='steelblue', 
-                opacity=0.8, 
+                opacity=0.85, 
                 name=shape.__class__.__name__
             ))
         else:
@@ -86,22 +109,10 @@ class Plotter3D:
             results['centroid_z']
         )
         
-        # Layout
-        fig.update_layout(
-            title=f"3D {shape.__class__.__name__} Analysis",
-            scene=dict(
-                xaxis_title="X (mm)",
-                yaxis_title="Y (mm)",
-                zaxis_title="Z (mm)",
-                aspectmode='data',
-                camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.5)
-                )
-            ),
-            showlegend=True,
-            template="plotly_white",
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
+        # Isometric layout
+        fig.update_layout(**self._get_isometric_layout(
+            f"3D {shape.__class__.__name__} Analysis"
+        ))
         
         return fig
     
@@ -119,7 +130,7 @@ class Plotter3D:
                 fig.add_trace(self._mesh_to_plotly(
                     trimesh_geom,
                     color='steelblue',
-                    opacity=0.8,
+                    opacity=0.85,
                     name='Solid Body'
                 ))
         
@@ -133,22 +144,10 @@ class Plotter3D:
                 label="Net Centroid"
             )
         
-        # Layout
-        fig.update_layout(
-            title="Composite 3D Analysis",
-            scene=dict(
-                xaxis_title="X (mm)",
-                yaxis_title="Y (mm)",
-                zaxis_title="Z (mm)",
-                aspectmode='data',
-                camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.5)
-                )
-            ),
-            showlegend=True,
-            template="plotly_white",
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
+        # Isometric layout
+        fig.update_layout(**self._get_isometric_layout(
+            "Composite 3D Analysis"
+        ))
         
         return fig
     
@@ -166,7 +165,7 @@ class Plotter3D:
             i=faces[:, 0],
             j=faces[:, 1],
             k=faces[:, 2],
-            opacity=0.7,
+            opacity=0.85,
             name='Imported Mesh',
             color='steelblue',
             flatshading=True,
@@ -190,24 +189,12 @@ class Plotter3D:
         
         # Add bounding box wireframe
         if 'bounding_box' in mesh_data:
-            bbox = mesh_data['bounding_box']
-            cx, cy, cz = centroid
-            self._add_bounding_box(fig, bbox, centroid)
+            self._add_bounding_box(fig, mesh_data['bounding_box'], centroid)
         
-        fig.update_layout(
-            title="STL Mesh Analysis",
-            scene=dict(
-                xaxis_title="X (mm)",
-                yaxis_title="Y (mm)",
-                zaxis_title="Z (mm)",
-                aspectmode='data',
-                camera=dict(
-                    eye=dict(x=1.5, y=1.5, z=1.5)
-                )
-            ),
-            template="plotly_white",
-            margin=dict(l=0, r=0, t=40, b=0)
-        )
+        # Isometric layout
+        fig.update_layout(**self._get_isometric_layout(
+            "STL Mesh Analysis"
+        ))
         
         return fig
     
@@ -239,23 +226,21 @@ class Plotter3D:
         
         elif shape.__class__.__name__ == 'Cone':
             mesh = trimesh.creation.cone(radius=shape.radius, height=shape.height, sections=32)
-            # Adjust for cone centroid (h/4 from base)
             mesh.apply_translation([cx, cy, cz - shape.height/4])
             return mesh
         
         elif shape.__class__.__name__ == 'Pyramid':
             bl, bw, h = shape.base_length, shape.base_width, shape.height
-            # Create pyramid vertices
             vertices = np.array([
                 [cx - bl/2, cy - bw/2, cz - h/2],
                 [cx + bl/2, cy - bw/2, cz - h/2],
                 [cx + bl/2, cy + bw/2, cz - h/2],
                 [cx - bl/2, cy + bw/2, cz - h/2],
-                [cx, cy, cz + h/2]  # apex
+                [cx, cy, cz + h/2]
             ])
             faces = np.array([
                 [0, 1, 4], [1, 2, 4], [2, 3, 4], [3, 0, 4],
-                [0, 2, 1], [0, 3, 2]  # base (two triangles)
+                [0, 2, 1], [0, 3, 2]
             ])
             return trimesh.Trimesh(vertices=vertices, faces=faces)
         
@@ -266,16 +251,14 @@ class Plotter3D:
         l, w, h = bbox_size
         cx, cy, cz = center
         
-        # 8 corners of bounding box
         x = [cx - l/2, cx + l/2, cx + l/2, cx - l/2, cx - l/2, cx + l/2, cx + l/2, cx - l/2]
         y = [cy - w/2, cy - w/2, cy + w/2, cy + w/2, cy - w/2, cy - w/2, cy + w/2, cy + w/2]
         z = [cz - h/2, cz - h/2, cz - h/2, cz - h/2, cz + h/2, cz + h/2, cz + h/2, cz + h/2]
         
-        # Edges of the box
         edges = [
-            [0, 1], [1, 2], [2, 3], [3, 0],  # bottom
-            [4, 5], [5, 6], [6, 7], [7, 4],  # top
-            [0, 4], [1, 5], [2, 6], [3, 7]   # verticals
+            [0, 1], [1, 2], [2, 3], [3, 0],
+            [4, 5], [5, 6], [6, 7], [7, 4],
+            [0, 4], [1, 5], [2, 6], [3, 7]
         ]
         
         for edge in edges:
