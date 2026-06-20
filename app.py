@@ -342,15 +342,17 @@ elif page == "2D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                col_del, col_info = st.columns([1, 3])
-                with col_del:
-                    if st.button("🗑️ Delete Selected", type="secondary"):
-                        st.session_state.components.pop(selected_row)
-                        st.rerun()
-                with col_info:
-                    comp = st.session_state.components[selected_row]
-                    op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
-                    st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
+                # SAFETY CHECK: ensure row still exists after delete
+                if selected_row < len(st.session_state.components):
+                    col_del, col_info = st.columns([1, 3])
+                    with col_del:
+                        if st.button("🗑️ Delete Selected", type="secondary"):
+                            st.session_state.components.pop(selected_row)
+                            st.rerun()
+                    with col_info:
+                        comp = st.session_state.components[selected_row]
+                        op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
+                        st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
             
             # LIVE PREVIEW - Uses Shapely via analyzer for proper holes
             st.markdown("### Live Preview")
@@ -580,9 +582,11 @@ elif page == "3D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                if st.button("🗑️ Delete Selected", type="secondary"):
-                    st.session_state.components_3d.pop(selected_row)
-                    st.rerun()
+                # SAFETY CHECK: ensure row still exists
+                if selected_row < len(st.session_state.components_3d):
+                    if st.button("🗑️ Delete Selected", type="secondary"):
+                        st.session_state.components_3d.pop(selected_row)
+                        st.rerun()
             
             st.markdown("### Live Preview (3D Composite)")
             shapes_only = [c['shape'] for c in st.session_state.components_3d]
