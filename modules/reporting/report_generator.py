@@ -8,7 +8,6 @@ from reportlab.lib.units import mm, inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import json
 import io
 import pandas as pd
@@ -16,59 +15,30 @@ from datetime import datetime
 from typing import Dict, Any
 from PIL import Image as PILImage
 import os
-import glob
+import urllib.request
+import tempfile
 
 
 class ReportGenerator:
     """Generate various report formats"""
     
-    def __init__(self):
-        """Register Persian-compatible fonts"""
-        self.persian_font = 'Helvetica'
-        self._register_font()
+    FONT_URL = "https://github.com/google/fonts/raw/main/ofl/vazirmatn/Vazirmatn-Regular.ttf"
+    FONT_PATH = os.path.join(tempfile.gettempdir(), "Vazirmatn-Regular.ttf")
     
-    def _register_font(self):
-        """Try to find and register a font that supports Persian/Arabic"""
-        # Try multiple approaches
+    def __init__(self):
+        """Download and register Persian font if needed"""
+        self.persian_font = 'Helvetica'
+        self._ensure_font()
+    
+    def _ensure_font(self):
+        """Download Vazirmatn font (Persian/Arabic) if not present"""
         try:
-            # Method 1: Search for Noto Naskh Arabic (common on cloud servers)
-            font_paths = []
-            search_paths = [
-                '/usr/share/fonts/',
-                '/usr/local/share/fonts/',
-                '/home/adminuser/.fonts/',
-            ]
-            for search_path in search_paths:
-                if os.path.exists(search_path):
-                    font_paths.extend(glob.glob(f'{search_path}**/*.ttf', recursive=True))
-                    font_paths.extend(glob.glob(f'{search_path}**/*.otf', recursive=True))
+            if not os.path.exists(self.FONT_PATH):
+                urllib.request.urlretrieve(self.FONT_URL, self.FONT_PATH)
             
-            # Look for Arabic/Persian capable fonts
-            arabic_fonts = [f for f in font_paths if any(
-                name in f.lower() for name in ['noto', 'arabic', 'naskh', 'dejavu', 'amiri', 'scheherazade']
-            )]
-            
-            if arabic_fonts:
-                pdfmetrics.registerFont(TTFont('PersianFont', arabic_fonts[0]))
+            if os.path.exists(self.FONT_PATH):
+                pdfmetrics.registerFont(TTFont('PersianFont', self.FONT_PATH))
                 self.persian_font = 'PersianFont'
-                return
-            
-            # Method 2: Try DejaVu Sans directly
-            dejavu_paths = [
-                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-                '/usr/share/fonts/dejavu/DejaVuSans.ttf',
-                '/usr/share/fonts/TTF/DejaVuSans.ttf',
-            ]
-            for path in dejavu_paths:
-                if os.path.exists(path):
-                    pdfmetrics.registerFont(TTFont('PersianFont', path))
-                    self.persian_font = 'PersianFont'
-                    return
-            
-            # Method 3: Use Unicode CID font (built into ReportLab, supports Arabic)
-            pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
-            self.persian_font = 'STSong-Light'
-            
         except Exception:
             self.persian_font = 'Helvetica'
     
@@ -86,7 +56,6 @@ class ReportGenerator:
         
         t = lambda key, default: translations.get(key, default)
         
-        # Detect if Persian is needed
         test_text = t('report_analysis_results', 'Analysis Results')
         is_persian = any(ord(c) > 127 for c in test_text)
         font_name = self.persian_font if is_persian else 'Helvetica'
@@ -102,37 +71,26 @@ class ReportGenerator:
         
         styles = getSampleStyleSheet()
         
-        # Create styles
         title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontName=font_name,
-            fontSize=24,
-            spaceAfter=30,
-            encoding='utf-8'
+            'CustomTitle', parent=styles['Heading1'],
+            fontName=font_name, fontSize=24, spaceAfter=30
         )
         heading_style = ParagraphStyle(
-            'CustomHeading',
-            parent=styles['Heading2'],
-            fontName=font_name,
-            fontSize=16,
-            spaceAfter=12,
-            encoding='utf-8'
+            'CustomHeading', parent=styles['Heading2'],
+            fontName=font_name, fontSize=16, spaceAfter=12
         )
         normal_style = ParagraphStyle(
-            'CustomNormal',
-            parent=styles['Normal'],
-            fontName=font_name,
-            fontSize=12,
-            encoding='utf-8'
+            'CustomNormal', parent=styles['Normal'],
+            fontName=font_name, fontSize=12
         )
         
         story = []
         
-        # Title
         story.append(Paragraph(project_name, title_style))
-        story.append(Paragraph(f"{t('report_generated_on', 'Generated')}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
-                              normal_style))
+        story.append(Paragraph(
+            f"{t('report_generated_on', 'Generated')}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
+            normal_style
+        ))
         
         if engineer_name:
             story.append(Paragraph(f"{t('report_engineer', 'Engineer')}: {engineer_name}", normal_style))
@@ -152,32 +110,19 @@ class ReportGenerator:
                 
                 if img_bytes and len(img_bytes) > 100:
                     story.append(Paragraph(t('report_title', 'Geometry Preview'), heading_style))
-                    
                     pil_img = PILImage.open(io.BytesIO(img_bytes))
                     img_width, img_height = pil_img.size
-                    
-                    max_width = 180 * mm
-                    max_height = 120 * mm
-                    
+                    max_width, max_height = 180 * mm, 120 * mm
                     aspect = img_width / img_height
-                    if aspect > max_width / max_height:
-                        draw_width = max_width
-                        draw_height = max_width / aspect
-                    else:
-                        draw_height = max_height
-                        draw_width = max_height * aspect
-                    
+                    draw_width = max_width if aspect > max_width/max_height else max_height * aspect
+                    draw_height = max_width/aspect if aspect > max_width/max_height else max_height
                     temp_img = io.BytesIO()
                     pil_img.save(temp_img, format='PNG')
                     temp_img.seek(0)
-                    
-                    img = Image(temp_img, width=draw_width, height=draw_height)
-                    story.append(img)
+                    story.append(Image(temp_img, width=draw_width, height=draw_height))
                     story.append(Spacer(1, 15))
-                    
             except Exception:
-                story.append(Paragraph(f"({t('report_image_error', 'Preview image could not be rendered')})", normal_style))
-                story.append(Spacer(1, 10))
+                pass
         
         # Analysis Results
         story.append(Paragraph(t('report_analysis_results', 'Analysis Results'), heading_style))
@@ -187,17 +132,10 @@ class ReportGenerator:
         for key, value in analysis_data.items():
             if isinstance(value, (int, float)):
                 unit = 'mm'
-                if 'area' in key.lower():
-                    unit = 'mm²'
-                elif 'volume' in key.lower():
-                    unit = 'mm³'
-                elif 'mass' in key.lower():
-                    unit = 'kg'
-                
+                if 'area' in key.lower(): unit = 'mm²'
+                elif 'volume' in key.lower(): unit = 'mm³'
+                elif 'mass' in key.lower(): unit = 'kg'
                 display_key = key.replace('_', ' ').title()
-                if 'total' in key.lower():
-                    display_key = display_key.replace('Total ', 'Total ')
-                
                 data.append([display_key, f"{value:.3f}", unit])
         
         if len(data) > 1:
@@ -215,13 +153,11 @@ class ReportGenerator:
             ]))
             story.append(table)
         
-        # Notes
         if notes:
             story.append(Spacer(1, 20))
             story.append(Paragraph(t('report_notes', 'Additional Notes'), heading_style))
             story.append(Paragraph(notes, normal_style))
         
-        # Footer
         story.append(Spacer(1, 30))
         story.append(Paragraph(
             t('report_generated_by', 'Generated by Center of Mass & Centroid Analysis System'),
@@ -229,31 +165,13 @@ class ReportGenerator:
         ))
         
         doc.build(story)
-        
-        pdf_bytes = buffer.getvalue()
-        buffer.close()
-        
-        return pdf_bytes
+        buffer.seek(0)
+        return buffer.read()
     
     def generate_json(self, analysis_data: Dict[str, Any]) -> str:
-        """Generate JSON report"""
-        clean_data = {}
-        for key, value in analysis_data.items():
-            if isinstance(value, (int, float, str, bool, list, dict)):
-                clean_data[key] = value
-        
-        report = {
-            'timestamp': datetime.now().isoformat(),
-            'analysis_results': clean_data
-        }
-        return json.dumps(report, indent=2)
+        clean_data = {k: v for k, v in analysis_data.items() if isinstance(v, (int, float, str, bool, list, dict))}
+        return json.dumps({'timestamp': datetime.now().isoformat(), 'analysis_results': clean_data}, indent=2)
     
     def generate_csv(self, analysis_data: Dict[str, Any]) -> bytes:
-        """Generate CSV report"""
-        flat_data = {}
-        for key, value in analysis_data.items():
-            if not isinstance(value, (list, dict)):
-                flat_data[key] = value
-        
-        df = pd.DataFrame([flat_data])
-        return df.to_csv(index=False).encode('utf-8')
+        flat_data = {k: v for k, v in analysis_data.items() if not isinstance(v, (list, dict))}
+        return pd.DataFrame([flat_data]).to_csv(index=False).encode('utf-8')
