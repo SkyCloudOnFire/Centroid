@@ -499,9 +499,6 @@ elif page == "3D Analysis":
         fig = plotter_3d.plot_3d_shape_with_centroid(shape, results)
         st.plotly_chart(fig, use_container_width=True, key="live_3d")
         
-        # Save figure as image for report
-        img_bytes = fig.to_image(format="png", width=1200, height=800)
-        
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Volume", f"{results['volume']:.2f} mm³")
@@ -516,7 +513,7 @@ elif page == "3D Analysis":
         with col_save:
             if st.button("💾 Save to Report", type="primary", key="save_3d"):
                 st.session_state.com_data = results
-                st.session_state.preview_image = img_bytes
+                st.session_state.preview_image = None
                 st.success("Results saved! Go to Report Generator to export.")
         with col_reset:
             st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
@@ -646,8 +643,6 @@ elif page == "3D Analysis":
             fig = plotter_3d.plot_composite_3d(results_3d)
             st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
             
-            img_bytes = fig.to_image(format="png", width=1200, height=800)
-            
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Net Volume", f"{results_3d['total_volume']:.2f} mm³")
@@ -662,7 +657,7 @@ elif page == "3D Analysis":
             with col_save:
                 if st.button("💾 Save to Report", type="primary", key="save_3d_comp"):
                     st.session_state.com_data = results_3d
-                    st.session_state.preview_image = img_bytes
+                    st.session_state.preview_image = None
                     st.success("Results saved! Go to Report Generator to export.")
             with col_reset:
                 st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
@@ -705,8 +700,6 @@ elif page == "STL Import":
             fig = plotter.plot_mesh_with_centroid(mesh_data)
             st.plotly_chart(fig, use_container_width=True)
             
-            img_bytes = fig.to_image(format="png", width=1200, height=800)
-            
             col_save, col_reset = st.columns([1, 1])
             with col_save:
                 if st.button("💾 Save to Report", type="primary"):
@@ -717,7 +710,7 @@ elif page == "STL Import":
                         'centroid_z': mesh_data['centroid'][2]
                     }
                     st.session_state.com_data = results
-                    st.session_state.preview_image = img_bytes
+                    st.session_state.preview_image = None
                     st.success("Results saved! Go to Report Generator to export.")
             with col_reset:
                 st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
@@ -758,7 +751,7 @@ elif page == "Report Generator":
                         project_name, 
                         engineer_name, 
                         notes,
-                        st.session_state.preview_image  # Pass image to report
+                        st.session_state.get('preview_image', None)
                     )
                     st.download_button("Download PDF", pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
                 elif report_format == "JSON":
