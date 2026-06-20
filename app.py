@@ -136,11 +136,17 @@ with st.sidebar:
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
     
+    nav_options = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
+    
+    # Ensure page is valid
+    if st.session_state.page not in nav_options:
+        st.session_state.page = "Home"
+    
     page = st.radio(
         "Navigation",
-        ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"],
+        nav_options,
         label_visibility="collapsed",
-        index=["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"].index(st.session_state.page)
+        index=nav_options.index(st.session_state.page)
     )
     
     st.session_state.page = page
@@ -336,14 +342,14 @@ elif page == "2D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                comp = st.session_state.components[selected_row]
-                op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
                 col_del, col_info = st.columns([1, 3])
                 with col_del:
                     if st.button("🗑️ Delete Selected", type="secondary"):
                         st.session_state.components.pop(selected_row)
                         st.rerun()
                 with col_info:
+                    comp = st.session_state.components[selected_row]
+                    op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
                     st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
             
             # LIVE PREVIEW - Uses Shapely via analyzer for proper holes
@@ -351,10 +357,7 @@ elif page == "2D Analysis":
             shapes_only = [c['shape'] for c in st.session_state.components]
             operations = [c['operation'] for c in st.session_state.components]
             
-            # Use the NEW analyzer with Shapely
             results = analyzer.analyze_composite_2d(shapes_only, operations)
-            
-            # Plot with Matplotlib (shows proper holes)
             img_bytes = plotter.plot_composite_with_centroid(shapes_only, results, operations)
             st.image(img_bytes, use_column_width=True)
             
@@ -581,7 +584,6 @@ elif page == "3D Analysis":
                     st.session_state.components_3d.pop(selected_row)
                     st.rerun()
             
-            # Use Trimesh-based analyzer for proper boolean 3D
             st.markdown("### Live Preview (3D Composite)")
             shapes_only = [c['shape'] for c in st.session_state.components_3d]
             operations = [c['operation'] for c in st.session_state.components_3d]
