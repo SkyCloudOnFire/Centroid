@@ -63,17 +63,25 @@ class ReportGenerator:
         # Preview Image (if provided)
         if preview_image is not None:
             try:
-                # Check if it's bytes and has content
-                if isinstance(preview_image, bytes) and len(preview_image) > 100:
+                # Convert BytesIO to bytes if needed
+                if isinstance(preview_image, io.BytesIO):
+                    preview_image.seek(0)
+                    img_bytes = preview_image.read()
+                elif isinstance(preview_image, bytes):
+                    img_bytes = preview_image
+                else:
+                    img_bytes = None
+                
+                if img_bytes and len(img_bytes) > 100:
                     story.append(Paragraph("Geometry Preview", heading_style))
                     
-                    # Convert bytes to PIL Image to verify it's valid
-                    pil_img = PILImage.open(io.BytesIO(preview_image))
+                    # Convert bytes to PIL Image
+                    pil_img = PILImage.open(io.BytesIO(img_bytes))
                     
                     # Get image dimensions
                     img_width, img_height = pil_img.size
                     
-                    # Calculate scaled size to fit A4 (max 180mm wide, 120mm tall)
+                    # Calculate scaled size (max 180mm wide, 120mm tall)
                     max_width = 180 * mm
                     max_height = 120 * mm
                     
@@ -85,46 +93,18 @@ class ReportGenerator:
                         draw_height = max_height
                         draw_width = max_height * aspect
                     
-                    # Create temporary file for ReportLab
+                    # Save as PNG bytes
                     temp_img = io.BytesIO()
                     pil_img.save(temp_img, format='PNG')
                     temp_img.seek(0)
                     
-                    # Add image to report
+                    # Add to report
                     img = Image(temp_img, width=draw_width, height=draw_height)
                     story.append(img)
                     story.append(Spacer(1, 15))
-                
-                elif isinstance(preview_image, io.BytesIO):
-                    # If it's a BytesIO object
-                    story.append(Paragraph("Geometry Preview", heading_style))
-                    preview_image.seek(0)
-                    img_data = preview_image.read()
-                    if len(img_data) > 100:
-                        pil_img = PILImage.open(io.BytesIO(img_data))
-                        img_width, img_height = pil_img.size
-                        
-                        max_width = 180 * mm
-                        max_height = 120 * mm
-                        
-                        aspect = img_width / img_height
-                        if aspect > max_width / max_height:
-                            draw_width = max_width
-                            draw_height = max_width / aspect
-                        else:
-                            draw_height = max_height
-                            draw_width = max_height * aspect
-                        
-                        temp_img = io.BytesIO()
-                        pil_img.save(temp_img, format='PNG')
-                        temp_img.seek(0)
-                        
-                        img = Image(temp_img, width=draw_width, height=draw_height)
-                        story.append(img)
-                        story.append(Spacer(1, 15))
-                
+                    
             except Exception as e:
-                story.append(Paragraph(f"(Preview image could not be rendered: {str(e)})", styles['Normal']))
+                story.append(Paragraph(f"(Preview image could not be rendered)", styles['Normal']))
                 story.append(Spacer(1, 10))
         
         # Analysis Results
