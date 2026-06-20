@@ -760,7 +760,7 @@ elif page == "Report Generator":
                         project_name, 
                         engineer_name, 
                         notes,
-                        st.session_state.get('preview_image', None)
+                        st.session_state.get('preview_image', None),
 translations
                     )
                     st.download_button("Download PDF", pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
