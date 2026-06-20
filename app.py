@@ -60,212 +60,69 @@ def load_css(theme, rtl=False):
         footer_color = "#555555"
     
     rtl_css = """
-        .main-header {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .main-header h1 {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .main-header p {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .stButton > button {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        p {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        ul, ol, li {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .kpi-card {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .stMetric {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .stTextInput > div > div > input {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .stTextArea > div > div > textarea {
-            direction: rtl !important;
-            text-align: right !important;
-        }
-        .add-badge {
-            display: inline-block;
-            background: #10b981;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .cut-badge {
-            display: inline-block;
-            background: #ef4444;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
+        .main-header { direction: rtl !important; text-align: right !important; }
+        .main-header h1 { direction: rtl !important; text-align: right !important; }
+        .main-header p { direction: rtl !important; text-align: right !important; }
+        .stButton > button { direction: rtl !important; text-align: right !important; }
+        h1, h2, h3, h4, h5, h6 { direction: rtl !important; text-align: right !important; }
+        p { direction: rtl !important; text-align: right !important; }
+        ul, ol, li { direction: rtl !important; text-align: right !important; }
+        .kpi-card { direction: rtl !important; text-align: right !important; }
+        .stMetric { direction: rtl !important; text-align: right !important; }
+        .stTextInput > div > div > input { direction: rtl !important; text-align: right !important; }
+        .stTextArea > div > div > textarea { direction: rtl !important; text-align: right !important; }
+        .add-badge { display: inline-block; background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .cut-badge { display: inline-block; background: #ef4444; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
     """ if rtl else """
-        .add-badge {
-            display: inline-block;
-            background: #10b981;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .cut-badge {
-            display: inline-block;
-            background: #ef4444;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
+        .add-badge { display: inline-block; background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .cut-badge { display: inline-block; background: #ef4444; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
     """
     
     st.markdown(f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        * {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }}
+        * {{ font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
         
         .main-header {{
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2rem;
-            border-radius: 16px;
-            color: white;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem; border-radius: 16px; color: white;
+            margin-bottom: 2rem; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }}
         
         .kpi-card {{
-            background: {card_bg};
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-            border: 1px solid {border_color};
-            transition: transform 0.2s;
-            color: {card_text};
+            background: {card_bg}; border-radius: 12px; padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); border: 1px solid {border_color};
+            transition: transform 0.2s; color: {card_text};
         }}
+        .kpi-card:hover {{ transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }}
+        .kpi-card h3 {{ color: {card_text} !important; margin-bottom: 0.5rem; }}
+        .kpi-card h4 {{ color: {card_text} !important; }}
+        .kpi-card p {{ color: {card_text} !important; }}
+        .kpi-card ul {{ color: {card_text} !important; }}
+        .kpi-card li {{ color: {card_text} !important; }}
+        .kpi-card div {{ color: {card_text} !important; }}
         
-        .kpi-card:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }}
-        
-        .kpi-card h3 {{
-            color: {card_text} !important;
-            margin-bottom: 0.5rem;
-        }}
-        
-        .kpi-card h4 {{
-            color: {card_text} !important;
-        }}
-        
-        .kpi-card p {{
-            color: {card_text} !important;
-        }}
-        
-        .kpi-card ul {{
-            color: {card_text} !important;
-        }}
-        
-        .kpi-card li {{
-            color: {card_text} !important;
-        }}
-        
-        .kpi-card div {{
-            color: {card_text} !important;
-        }}
-        
-        .kpi-value {{
-            font-size: 2rem;
-            font-weight: 700;
-            color: {kpi_value_color} !important;
-            margin: 0.5rem 0;
-        }}
-        
-        .kpi-label {{
-            font-size: 0.875rem;
-            color: {kpi_label_color} !important;
-            opacity: 0.85;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }}
+        .kpi-value {{ font-size: 2rem; font-weight: 700; color: {kpi_value_color} !important; margin: 0.5rem 0; }}
+        .kpi-label {{ font-size: 0.875rem; color: {kpi_label_color} !important; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }}
         
         .stButton > button {{
-            border-radius: 8px;
-            padding: 0.5rem 1.2rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            border: 1px solid {border_color};
-            background: {card_bg};
-            color: {card_text};
-            font-size: 0.9rem;
+            border-radius: 8px; padding: 0.5rem 1.2rem; font-weight: 500;
+            transition: all 0.2s; border: 1px solid {border_color};
+            background: {card_bg}; color: {card_text}; font-size: 0.9rem;
         }}
-        
-        .stButton > button:hover {{
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            border-color: #667eea;
-        }}
+        .stButton > button:hover {{ transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border-color: #667eea; }}
         
         .big-nav-btn button {{
-            border-radius: 12px !important;
-            padding: 1.5rem !important;
-            font-weight: 400 !important;
-            min-height: 220px !important;
-            white-space: pre-line !important;
-            text-align: left !important;
-            font-size: 0.95rem !important;
-            line-height: 1.6 !important;
-            width: 100% !important;
+            border-radius: 12px !important; padding: 1.5rem !important; font-weight: 400 !important;
+            min-height: 220px !important; white-space: pre-line !important; text-align: left !important;
+            font-size: 0.95rem !important; line-height: 1.6 !important; width: 100% !important;
         }}
         
-        .status-stable {{
-            color: #10b981 !important;
-            font-weight: 600;
-        }}
-        
-        .status-unstable {{
-            color: #ef4444 !important;
-            font-weight: 600;
-        }}
-        
-        .section-title {{
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 1rem 0;
-            color: {section_title_color};
-        }}
-        
-        .footer-text {{
-            text-align: center;
-            opacity: 0.7;
-            color: {footer_color};
-        }}
+        .status-stable {{ color: #10b981 !important; font-weight: 600; }}
+        .status-unstable {{ color: #ef4444 !important; font-weight: 600; }}
+        .section-title {{ font-size: 1.25rem; font-weight: 600; margin: 1rem 0; color: {section_title_color}; }}
+        .footer-text {{ text-align: center; opacity: 0.7; color: {footer_color}; }}
         
         {rtl_css}
         </style>
@@ -290,17 +147,8 @@ with st.sidebar:
     
     st.markdown("---")
     
-    theme = st.selectbox(
-        "Theme",
-        ["Dark", "Light", "System"],
-        key="theme_selector"
-    )
-    
-    language = st.selectbox(
-        "Language / زبان",
-        ["English", "Persian"],
-        key="language_selector"
-    )
+    theme = st.selectbox("Theme", ["Dark", "Light", "System"], key="theme_selector")
+    language = st.selectbox("Language / زبان", ["English", "Persian"], key="language_selector")
 
 is_rtl = (language == "Persian")
 
@@ -362,11 +210,7 @@ if page == "Home":
 elif page == "2D Analysis":
     st.markdown(f"## {translations['2d_analysis']}")
     
-    mode = st.radio(
-        "Input Mode",
-        ["Simple Shapes", "Composite Geometry", "Coordinate Input"],
-        horizontal=True
-    )
+    mode = st.radio("Input Mode", ["Simple Shapes", "Composite Geometry", "Coordinate Input"], horizontal=True)
     
     analyzer = COMAnalyzer()
     plotter = Plotter2D()
@@ -396,8 +240,8 @@ elif page == "2D Analysis":
         
         st.markdown("### Live Preview")
         results = analyzer.analyze_2d(shape)
-        fig = plotter.plot_shape_with_centroid(shape, results)
-        st.plotly_chart(fig, use_container_width=True, key="live_2d")
+        img_bytes = plotter.plot_shape_with_centroid(shape, results)
+        st.image(img_bytes, use_column_width=True)
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -420,7 +264,6 @@ elif page == "2D Analysis":
         with st.expander("➕ Add Component", expanded=True):
             comp_type = st.selectbox("Component Type", ["Rectangle", "Circle", "Triangle"])
             
-            # Add/Cut toggle
             operation = st.radio(
                 "Operation",
                 ["🟢 Add Material", "🔴 Cut Hole"],
@@ -469,12 +312,11 @@ elif page == "2D Analysis":
             table_data = []
             for i, comp in enumerate(st.session_state.components):
                 shape = comp['shape']
-                op_badge = "<span class='add-badge'>ADD</span>" if comp['operation'] == 'add' else "<span class='cut-badge'>CUT</span>"
                 area_val = shape.get_area()
                 sign = "+" if comp['operation'] == 'add' else "-"
                 table_data.append({
                     '#': i+1,
-                    'Op': op_badge,
+                    'Op': comp['operation'].upper(),
                     'Type': comp['type'],
                     'Area': f"{sign}{area_val:.2f}",
                     'Centroid': f"({shape.get_centroid()[0]:.1f}, {shape.get_centroid()[1]:.1f})"
@@ -483,13 +325,8 @@ elif page == "2D Analysis":
             df = pd.DataFrame(table_data)
             
             st.markdown("#### Click a row to select, then press delete:")
-            # Use columns without the HTML Op column for selection
-            df_display = df[['#', 'Type', 'Area', 'Centroid']].copy()
-            df_display['Op'] = [c['operation'].upper() for c in st.session_state.components]
-            df_display = df_display[['#', 'Op', 'Type', 'Area', 'Centroid']]
-            
             selection = st.dataframe(
-                df_display, 
+                df, 
                 use_container_width=True, 
                 hide_index=True,
                 selection_mode="single-row",
@@ -509,42 +346,17 @@ elif page == "2D Analysis":
                 with col_info:
                     st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
             
-            # LIVE PREVIEW with add/cut coloring
+            # LIVE PREVIEW - Uses Shapely via analyzer for proper holes
             st.markdown("### Live Preview")
             shapes_only = [c['shape'] for c in st.session_state.components]
             operations = [c['operation'] for c in st.session_state.components]
             
-            # Calculate composite with add/cut
-            total_area = 0
-            weighted_x = 0
-            weighted_y = 0
-            for shape, op in zip(shapes_only, operations):
-                area = shape.get_area()
-                centroid = shape.get_centroid()
-                if op == 'add':
-                    total_area += area
-                    weighted_x += area * centroid[0]
-                    weighted_y += area * centroid[1]
-                else:
-                    total_area -= area
-                    weighted_x -= area * centroid[0]
-                    weighted_y -= area * centroid[1]
+            # Use the NEW analyzer with Shapely
+            results = analyzer.analyze_composite_2d(shapes_only, operations)
             
-            if total_area > 0:
-                com_x = weighted_x / total_area
-                com_y = weighted_y / total_area
-            else:
-                com_x, com_y = 0, 0
-            
-            results = {
-                'total_area': total_area,
-                'centroid_x': com_x,
-                'centroid_y': com_y
-            }
-            
-            # Use composite plotter with add/cut colors
-            fig = plotter.plot_composite_with_centroid(shapes_only, results, operations)
-            st.plotly_chart(fig, use_container_width=True, key="live_composite")
+            # Plot with Matplotlib (shows proper holes)
+            img_bytes = plotter.plot_composite_with_centroid(shapes_only, results, operations)
+            st.image(img_bytes, use_column_width=True)
             
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -575,8 +387,8 @@ elif page == "2D Analysis":
                 results = analyzer.analyze_2d(polygon)
                 
                 st.markdown("### Live Preview")
-                fig = plotter.plot_polygon_with_centroid(coordinates, results)
-                st.plotly_chart(fig, use_container_width=True, key="live_polygon")
+                img_bytes = plotter.plot_polygon_with_centroid(coordinates, results)
+                st.image(img_bytes, use_column_width=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -597,11 +409,7 @@ elif page == "2D Analysis":
 elif page == "3D Analysis":
     st.markdown(f"## {translations['3d_analysis']}")
     
-    mode = st.radio(
-        "Input Mode",
-        ["Simple Shapes", "Composite Geometry"],
-        horizontal=True
-    )
+    mode = st.radio("Input Mode", ["Simple Shapes", "Composite Geometry"], horizontal=True)
     
     if mode == "Simple Shapes":
         shape_type = st.selectbox("Shape Type", ["Cube", "Box", "Sphere", "Cylinder", "Cone", "Pyramid"])
@@ -762,11 +570,8 @@ elif page == "3D Analysis":
             
             st.markdown("#### Click a row to select, then press delete:")
             selection = st.dataframe(
-                df, 
-                use_container_width=True, 
-                hide_index=True,
-                selection_mode="single-row",
-                on_select="rerun",
+                df, use_container_width=True, hide_index=True,
+                selection_mode="single-row", on_select="rerun",
                 key="component_table_3d"
             )
             
@@ -776,54 +581,19 @@ elif page == "3D Analysis":
                     st.session_state.components_3d.pop(selected_row)
                     st.rerun()
             
-            # Calculate composite 3D
+            # Use Trimesh-based analyzer for proper boolean 3D
+            st.markdown("### Live Preview (3D Composite)")
             shapes_only = [c['shape'] for c in st.session_state.components_3d]
             operations = [c['operation'] for c in st.session_state.components_3d]
             
-            total_volume = 0
-            weighted_x = 0
-            weighted_y = 0
-            weighted_z = 0
-            for shape, op in zip(shapes_only, operations):
-                vol = shape.get_volume()
-                centroid = shape.get_centroid()
-                if op == 'add':
-                    total_volume += vol
-                    weighted_x += vol * centroid[0]
-                    weighted_y += vol * centroid[1]
-                    weighted_z += vol * centroid[2]
-                else:
-                    total_volume -= vol
-                    weighted_x -= vol * centroid[0]
-                    weighted_y -= vol * centroid[1]
-                    weighted_z -= vol * centroid[2]
-            
-            if total_volume > 0:
-                com_x = weighted_x / total_volume
-                com_y = weighted_y / total_volume
-                com_z = weighted_z / total_volume
-            else:
-                com_x, com_y, com_z = 0, 0, 0
-            
-            results_3d = {
-                'volume': total_volume,
-                'centroid_x': com_x,
-                'centroid_y': com_y,
-                'centroid_z': com_z
-            }
-            
-            st.markdown("### Live Preview (3D Composite)")
+            results_3d = analyzer.analyze_composite_3d(shapes_only, operations)
             plotter_3d = Plotter3D()
-            # Plot first add shape as reference
-            for shape, op in zip(shapes_only, operations):
-                if op == 'add':
-                    fig = plotter_3d.plot_3d_shape_with_centroid(shape, results_3d)
-                    st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
-                    break
+            fig = plotter_3d.plot_composite_3d(results_3d)
+            st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Net Volume", f"{results_3d['volume']:.2f} mm³")
+                st.metric("Net Volume", f"{results_3d['total_volume']:.2f} mm³")
             with col2:
                 st.metric("Centroid X", f"{results_3d['centroid_x']:.2f} mm")
             with col3:
@@ -919,4 +689,5 @@ st.markdown(
     "Center of Mass & Centroid Analysis System v1.0 | "
     "© 2024 Engineering Analysis Tools"
     "</div>",
-    unsafe_allow_html=True)
+    unsafe_allow_html=True
+)
