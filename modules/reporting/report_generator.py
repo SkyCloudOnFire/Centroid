@@ -8,6 +8,7 @@ from reportlab.lib.units import mm, inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import json
 import io
 import pandas as pd
@@ -15,6 +16,7 @@ from datetime import datetime
 from typing import Dict, Any
 from PIL import Image as PILImage
 import os
+import glob
 
 
 class ReportGenerator:
@@ -22,29 +24,52 @@ class ReportGenerator:
     
     def __init__(self):
         """Register Persian-compatible fonts"""
+        self.persian_font = 'Helvetica'
+        self._register_font()
+    
+    def _register_font(self):
+        """Try to find and register a font that supports Persian/Arabic"""
+        # Try multiple approaches
         try:
-            # Try to register DejaVu Sans (supports Arabic/Persian)
-            # Most Linux systems have this font
-            font_paths = [
-                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-                '/usr/share/fonts/TTF/DejaVuSans.ttf',
-                '/usr/share/fonts/dejavu/DejaVuSans.ttf',
-                '/System/Library/Fonts/Supplemental/Arial.ttf',  # Mac fallback
+            # Method 1: Search for Noto Naskh Arabic (common on cloud servers)
+            font_paths = []
+            search_paths = [
+                '/usr/share/fonts/',
+                '/usr/local/share/fonts/',
+                '/home/adminuser/.fonts/',
             ]
+            for search_path in search_paths:
+                if os.path.exists(search_path):
+                    font_paths.extend(glob.glob(f'{search_path}**/*.ttf', recursive=True))
+                    font_paths.extend(glob.glob(f'{search_path}**/*.otf', recursive=True))
             
-            font_registered = False
-            for font_path in font_paths:
-                if os.path.exists(font_path):
-                    pdfmetrics.registerFont(TTFont('PersianFont', font_path))
-                    font_registered = True
-                    break
+            # Look for Arabic/Persian capable fonts
+            arabic_fonts = [f for f in font_paths if any(
+                name in f.lower() for name in ['noto', 'arabic', 'naskh', 'dejavu', 'amiri', 'scheherazade']
+            )]
             
-            if not font_registered:
-                # Fallback: use Helvetica (no Persian support but won't crash)
-                self.persian_font = 'Helvetica'
-            else:
+            if arabic_fonts:
+                pdfmetrics.registerFont(TTFont('PersianFont', arabic_fonts[0]))
                 self.persian_font = 'PersianFont'
-        except:
+                return
+            
+            # Method 2: Try DejaVu Sans directly
+            dejavu_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+            ]
+            for path in dejavu_paths:
+                if os.path.exists(path):
+                    pdfmetrics.registerFont(TTFont('PersianFont', path))
+                    self.persian_font = 'PersianFont'
+                    return
+            
+            # Method 3: Use Unicode CID font (built into ReportLab, supports Arabic)
+            pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+            self.persian_font = 'STSong-Light'
+            
+        except Exception:
             self.persian_font = 'Helvetica'
     
     def generate_pdf(self, analysis_data: Dict[str, Any], 
@@ -62,7 +87,8 @@ class ReportGenerator:
         t = lambda key, default: translations.get(key, default)
         
         # Detect if Persian is needed
-        is_persian = any(ord(c) > 127 for c in (t('report_analysis_results', 'Analysis Results')))
+        test_text = t('report_analysis_results', 'Analysis Results')
+        is_persian = any(ord(c) > 127 for c in test_text)
         font_name = self.persian_font if is_persian else 'Helvetica'
         
         doc = SimpleDocTemplate(
@@ -76,26 +102,29 @@ class ReportGenerator:
         
         styles = getSampleStyleSheet()
         
-        # Create styles with Persian-compatible font
+        # Create styles
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
             fontName=font_name,
             fontSize=24,
-            spaceAfter=30
+            spaceAfter=30,
+            encoding='utf-8'
         )
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
             fontName=font_name,
             fontSize=16,
-            spaceAfter=12
+            spaceAfter=12,
+            encoding='utf-8'
         )
         normal_style = ParagraphStyle(
             'CustomNormal',
             parent=styles['Normal'],
             fontName=font_name,
-            fontSize=12
+            fontSize=12,
+            encoding='utf-8'
         )
         
         story = []
@@ -110,7 +139,7 @@ class ReportGenerator:
         
         story.append(Spacer(1, 20))
         
-        # Preview Image (if provided)
+        # Preview Image
         if preview_image is not None:
             try:
                 if isinstance(preview_image, io.BytesIO):
@@ -146,7 +175,7 @@ class ReportGenerator:
                     story.append(img)
                     story.append(Spacer(1, 15))
                     
-            except Exception as e:
+            except Exception:
                 story.append(Paragraph(f"({t('report_image_error', 'Preview image could not be rendered')})", normal_style))
                 story.append(Spacer(1, 10))
         
