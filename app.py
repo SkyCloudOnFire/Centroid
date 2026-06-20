@@ -135,71 +135,70 @@ def load_css(theme, rtl=False):
         </style>
     """, unsafe_allow_html=True)
 
-# Sidebar navigation
+# ===== SIDEBAR - handles language/theme/page switching =====
 with st.sidebar:
     st.image("https://via.placeholder.com/150x50?text=COM+System", width=150)
     st.markdown("---")
     
+    # Initialize session state
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
     if 'language' not in st.session_state:
         st.session_state.language = "English"
+    if 'theme' not in st.session_state:
+        st.session_state.theme = "Dark"
     
-    # Always use English for internal page keys, translate display only
-    current_lang = st.session_state.language
-    _t = lang_manager.get_translations(current_lang)
+    # Get translations for sidebar display
+    sidebar_t = lang_manager.get_translations(st.session_state.language)
     
-    # Internal keys (never change)
+    # Navigation - internal keys mapped to display
     nav_internal = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
-    # Display labels (translated)
-    nav_display = [_t['nav_home'], _t['nav_2d'], _t['nav_3d'], _t['nav_stl'], _t['nav_report'], _t['nav_settings']]
+    nav_display = [
+        sidebar_t['nav_home'], sidebar_t['nav_2d'], sidebar_t['nav_3d'],
+        sidebar_t['nav_stl'], sidebar_t['nav_report'], sidebar_t['nav_settings']
+    ]
     
     if st.session_state.page not in nav_internal:
         st.session_state.page = "Home"
     
     page_idx = nav_internal.index(st.session_state.page)
-    
-    # Use selectbox instead of radio to avoid key issues
     page_display = st.selectbox(
-        _t['nav_label'],
+        sidebar_t['nav_label'],
         nav_display,
         index=page_idx,
         label_visibility="collapsed"
     )
-    
-    # Map display back to internal
-    page = nav_internal[nav_display.index(page_display)]
-    st.session_state.page = page
+    st.session_state.page = nav_internal[nav_display.index(page_display)]
     
     st.markdown("---")
     
-    # Theme selector
+    # Theme
     theme_display = st.selectbox(
-        _t['theme'], 
-        [_t['theme_dark'], _t['theme_light'], _t['theme_system']]
+        sidebar_t['theme'],
+        [sidebar_t['theme_dark'], sidebar_t['theme_light'], sidebar_t['theme_system']],
+        index=["Dark", "Light", "System"].index(st.session_state.theme) if st.session_state.theme in ["Dark", "Light", "System"] else 0
     )
+    if theme_display == sidebar_t['theme_dark']:
+        st.session_state.theme = "Dark"
+    elif theme_display == sidebar_t['theme_light']:
+        st.session_state.theme = "Light"
+    else:
+        st.session_state.theme = "System"
     
-    # Language selector
+    # Language
     lang_display = st.selectbox(
-        _t['language_label'], 
-        [_t['lang_english'], _t['lang_persian']]
+        sidebar_t['language_label'],
+        [sidebar_t['lang_english'], sidebar_t['lang_persian']],
+        index=0 if st.session_state.language == "English" else 1
     )
-    
-    # Map to internal
-    if lang_display == _t['lang_persian']:
+    if lang_display == sidebar_t['lang_persian']:
         st.session_state.language = "Persian"
     else:
         st.session_state.language = "English"
-    
-    if theme_display == _t['theme_dark']:
-        theme = "Dark"
-    elif theme_display == _t['theme_light']:
-        theme = "Light"
-    else:
-        theme = "System"
 
-# Get final translations after language is set
+# ===== LOAD TRANSLATIONS (always fresh from session state) =====
 language = st.session_state.language
+theme = st.session_state.theme
 is_rtl = (language == "Persian")
 
 if theme == "System":
@@ -211,8 +210,8 @@ if theme == "System":
 else:
     load_css(theme.lower(), is_rtl)
 
-translations = lang_manager.get_translations(language)
-t = translations
+t = lang_manager.get_translations(language)
+page = st.session_state.page
 
 st.markdown(f"""
     <div class="main-header">
@@ -794,7 +793,7 @@ elif page == "Report Generator":
                         engineer_name, 
                         notes,
                         st.session_state.get('preview_image', None),
-                        translations
+                        t
                     )
                     st.download_button(t['download_pdf'], pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
                 elif report_format == "JSON":
