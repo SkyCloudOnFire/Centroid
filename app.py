@@ -140,7 +140,6 @@ with st.sidebar:
     st.image("https://via.placeholder.com/150x50?text=COM+System", width=150)
     st.markdown("---")
     
-    # Initialize session state
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
     if 'language' not in st.session_state:
@@ -148,10 +147,8 @@ with st.sidebar:
     if 'theme' not in st.session_state:
         st.session_state.theme = "Dark"
     
-    # Get translations for sidebar display
     sidebar_t = lang_manager.get_translations(st.session_state.language)
     
-    # Navigation - internal keys mapped to display
     nav_internal = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
     nav_display = [
         sidebar_t['nav_home'], sidebar_t['nav_2d'], sidebar_t['nav_3d'],
@@ -172,7 +169,6 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Theme
     theme_display = st.selectbox(
         sidebar_t['theme'],
         [sidebar_t['theme_dark'], sidebar_t['theme_light'], sidebar_t['theme_system']],
@@ -185,7 +181,6 @@ with st.sidebar:
     else:
         st.session_state.theme = "System"
     
-    # Language
     lang_display = st.selectbox(
         sidebar_t['language_label'],
         [sidebar_t['lang_english'], sidebar_t['lang_persian']],
@@ -196,7 +191,7 @@ with st.sidebar:
     else:
         st.session_state.language = "English"
 
-# ===== LOAD TRANSLATIONS (always fresh from session state) =====
+# ===== LOAD TRANSLATIONS =====
 language = st.session_state.language
 theme = st.session_state.theme
 is_rtl = (language == "Persian")
@@ -490,6 +485,8 @@ elif page == "3D Analysis":
     
     mode = st.radio(t['input_mode'], [t['simple_shapes'], t['composite_geometry']], horizontal=True)
     
+    analyzer = COMAnalyzer()
+    
     if mode == t['simple_shapes']:
         shape_type = st.selectbox(t['shape_type'], [t['cube'], t['box'], t['sphere'], t['cylinder'], t['cone'], t['pyramid']])
         
@@ -530,7 +527,6 @@ elif page == "3D Analysis":
             shape.set_position(pos_x, pos_y, pos_z)
         
         st.markdown(f"### {t['live_preview']}")
-        analyzer = COMAnalyzer()
         results = analyzer.analyze_3d(shape)
         plotter_3d = Plotter3D()
         fig = plotter_3d.plot_3d_shape_with_centroid(shape, results)
