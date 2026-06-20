@@ -143,24 +143,37 @@ with st.sidebar:
     if 'page' not in st.session_state:
         st.session_state.page = "Home"
     
-    nav_options = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
+    # Get translations early for sidebar
+    _lang = st.session_state.get('language', 'English')
+    _t = lang_manager.get_translations(_lang)
     
-    if st.session_state.page not in nav_options:
+    nav_options = [_t['nav_home'], _t['nav_2d'], _t['nav_3d'], _t['nav_stl'], _t['nav_report'], _t['nav_settings']]
+    nav_internal = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
+    
+    if st.session_state.page not in nav_internal:
         st.session_state.page = "Home"
     
-    page = st.radio(
-        "Navigation",
+    page_idx = nav_internal.index(st.session_state.page)
+    page_label = st.radio(
+        _t['nav_label'],
         nav_options,
         label_visibility="collapsed",
-        index=nav_options.index(st.session_state.page)
+        index=page_idx
     )
-    
-    st.session_state.page = page
+    st.session_state.page = nav_internal[nav_options.index(page_label)]
+    page = st.session_state.page
     
     st.markdown("---")
     
-    theme = st.selectbox("Theme", ["Dark", "Light", "System"], key="theme_selector")
-    language = st.selectbox("Language / زبان", ["English", "Persian"], key="language_selector")
+    theme = st.selectbox(_t['theme'], [_t['theme_dark'], _t['theme_light'], _t['theme_system']], key="theme_selector")
+    language = st.selectbox(_t['language_label'], [_t['lang_english'], _t['lang_persian']], key="language_selector")
+    st.session_state.language = language
+
+# Map theme/language back to internal names
+theme_map = {_t['theme_dark']: 'Dark', _t['theme_light']: 'Light', _t['theme_system']: 'System'}
+lang_map = {_t['lang_english']: 'English', _t['lang_persian']: 'Persian'}
+theme = theme_map.get(theme, 'Dark')
+language = lang_map.get(language, 'English')
 
 is_rtl = (language == "Persian")
 
@@ -174,11 +187,12 @@ else:
     load_css(theme.lower(), is_rtl)
 
 translations = lang_manager.get_translations(language)
+t = translations  # shortcut
 
 st.markdown(f"""
     <div class="main-header">
-        <h1>{translations['title']}</h1>
-        <p style="font-size: 1.1rem; opacity: 0.9;">{translations['subtitle']}</p>
+        <h1>{t['title']}</h1>
+        <p style="font-size: 1.1rem; opacity: 0.9;">{t['subtitle']}</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -189,12 +203,12 @@ if 'preview_image' not in st.session_state:
 
 # Page routing
 if page == "Home":
-    st.markdown(f"## {translations['welcome']}")
+    st.markdown(f"## {t['welcome']}")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        btn_text_2d = f"{translations['btn_2d_title']}\n\n{translations['btn_2d_desc']}\n\n{translations['btn_2d_list']}"
+        btn_text_2d = f"{t['btn_2d_title']}\n\n{t['btn_2d_desc']}\n\n{t['btn_2d_list']}"
         st.markdown(f'<div class="big-nav-btn">', unsafe_allow_html=True)
         if st.button(btn_text_2d, key="btn_2d", use_container_width=True):
             st.session_state.page = "2D Analysis"
@@ -202,7 +216,7 @@ if page == "Home":
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
-        btn_text_3d = f"{translations['btn_3d_title']}\n\n{translations['btn_3d_desc']}\n\n{translations['btn_3d_list']}"
+        btn_text_3d = f"{t['btn_3d_title']}\n\n{t['btn_3d_desc']}\n\n{t['btn_3d_list']}"
         st.markdown(f'<div class="big-nav-btn">', unsafe_allow_html=True)
         if st.button(btn_text_3d, key="btn_3d", use_container_width=True):
             st.session_state.page = "3D Analysis"
@@ -210,7 +224,7 @@ if page == "Home":
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col3:
-        btn_text_stl = f"{translations['btn_stl_title']}\n\n{translations['btn_stl_desc']}\n\n{translations['btn_stl_list']}"
+        btn_text_stl = f"{t['btn_stl_title']}\n\n{t['btn_stl_desc']}\n\n{t['btn_stl_list']}"
         st.markdown(f'<div class="big-nav-btn">', unsafe_allow_html=True)
         if st.button(btn_text_stl, key="btn_stl", use_container_width=True):
             st.session_state.page = "STL Import"
@@ -218,107 +232,106 @@ if page == "Home":
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown(f"## {translations['quick_start_guide']}")
-    st.markdown(translations['quick_start_steps'])
+    st.markdown(f"## {t['quick_start_guide']}")
+    st.markdown(t['quick_start_steps'])
 
 elif page == "2D Analysis":
-    st.markdown(f"## {translations['2d_analysis']}")
+    st.markdown(f"## {t['2d_analysis']}")
     
-    mode = st.radio("Input Mode", ["Simple Shapes", "Composite Geometry", "Coordinate Input"], horizontal=True)
+    mode = st.radio(t['input_mode'], [t['simple_shapes'], t['composite_geometry'], t['coordinate_input']], horizontal=True)
     
     analyzer = COMAnalyzer()
     plotter = Plotter2D()
     
-    if mode == "Simple Shapes":
-        shape_type = st.selectbox("Shape Type", ["Rectangle", "Circle", "Triangle"])
+    if mode == t['simple_shapes']:
+        shape_type = st.selectbox(t['shape_type'], [t['rectangle'], t['circle'], t['triangle']])
         
         col1, col2 = st.columns(2)
         
         with col1:
-            if shape_type == "Rectangle":
-                width = st.number_input("Width", min_value=0.1, value=10.0, step=0.1)
-                height = st.number_input("Height", min_value=0.1, value=5.0, step=0.1)
+            if shape_type == t['rectangle']:
+                width = st.number_input(t['width'], min_value=0.1, value=10.0, step=0.1)
+                height = st.number_input(t['height'], min_value=0.1, value=5.0, step=0.1)
                 shape = Rectangle(width, height)
-            elif shape_type == "Circle":
-                radius = st.number_input("Radius", min_value=0.1, value=5.0, step=0.1)
+            elif shape_type == t['circle']:
+                radius = st.number_input(t['radius'], min_value=0.1, value=5.0, step=0.1)
                 shape = Circle(radius)
-            elif shape_type == "Triangle":
-                base = st.number_input("Base", min_value=0.1, value=6.0, step=0.1)
-                height = st.number_input("Height", min_value=0.1, value=4.0, step=0.1)
+            elif shape_type == t['triangle']:
+                base = st.number_input(t['base'], min_value=0.1, value=6.0, step=0.1)
+                height = st.number_input(t['height'], min_value=0.1, value=4.0, step=0.1)
                 shape = Triangle(base, height)
         
         with col2:
-            center_x = st.number_input("Center X", value=0.0, step=0.1)
-            center_y = st.number_input("Center Y", value=0.0, step=0.1)
+            center_x = st.number_input(t['center_x'], value=0.0, step=0.1)
+            center_y = st.number_input(t['center_y'], value=0.0, step=0.1)
             shape.set_position(center_x, center_y)
         
-        st.markdown("### Live Preview")
+        st.markdown(f"### {t['live_preview']}")
         results = analyzer.analyze_2d(shape)
         img_bytes = plotter.plot_shape_with_centroid(shape, results)
         st.image(img_bytes, use_column_width=True)
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Area", f"{results['area']:.2f} mm²")
+            st.metric(t['area'], f"{results['area']:.2f} {t['mm2']}")
         with col2:
-            st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+            st.metric(t['centroid_x'], f"{results['centroid_x']:.2f} {t['mm']}")
         with col3:
-            st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+            st.metric(t['centroid_y'], f"{results['centroid_y']:.2f} {t['mm']}")
         
         col_save, col_reset = st.columns([1, 1])
         with col_save:
-            if st.button("💾 Save to Report", type="primary"):
+            if st.button(t['save_to_report'], type="primary"):
                 st.session_state.com_data = results
                 st.session_state.preview_image = img_bytes
-                st.success("Results saved! Go to Report Generator to export.")
+                st.success(t['results_saved'])
         with col_reset:
             st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-            if st.button("🔄 Reset Shape", key="reset_2d_simple"):
+            if st.button(t['reset_shape'], key="reset_2d_simple"):
                 st.session_state.com_data = None
                 st.session_state.preview_image = None
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
     
-    elif mode == "Composite Geometry":
-        st.markdown("### Composite Shape Builder")
+    elif mode == t['composite_geometry']:
+        st.markdown(f"### {t['composite_shape_builder']}")
         
         if 'components' not in st.session_state:
             st.session_state.components = []
         
-        with st.expander("➕ Add Component", expanded=True):
-            comp_type = st.selectbox("Component Type", ["Rectangle", "Circle", "Triangle"])
+        with st.expander(t['add_component'], expanded=True):
+            comp_type = st.selectbox(t['shape_type'], [t['rectangle'], t['circle'], t['triangle']])
             
             operation = st.radio(
-                "Operation",
-                ["🟢 Add Material", "🔴 Cut Hole"],
+                t['operation'],
+                [t['add_material'], t['cut_hole']],
                 horizontal=True,
-                help="Add: adds to total area. Cut: subtracts from total area (creates holes)"
             )
-            is_add = (operation == "🟢 Add Material")
+            is_add = (operation == t['add_material'])
             
             col1, col2 = st.columns(2)
             
             with col1:
-                if comp_type == "Rectangle":
-                    w = st.number_input("Width", min_value=0.1, value=5.0, key="comp_w")
-                    h = st.number_input("Height", min_value=0.1, value=3.0, key="comp_h")
-                elif comp_type == "Circle":
-                    r = st.number_input("Radius", min_value=0.1, value=2.0, key="comp_r")
-                elif comp_type == "Triangle":
-                    b = st.number_input("Base", min_value=0.1, value=4.0, key="comp_b")
-                    h = st.number_input("Height", min_value=0.1, value=3.0, key="comp_h")
+                if comp_type == t['rectangle']:
+                    w = st.number_input(t['width'], min_value=0.1, value=5.0, key="comp_w")
+                    h = st.number_input(t['height'], min_value=0.1, value=3.0, key="comp_h")
+                elif comp_type == t['circle']:
+                    r = st.number_input(t['radius'], min_value=0.1, value=2.0, key="comp_r")
+                elif comp_type == t['triangle']:
+                    b = st.number_input(t['base'], min_value=0.1, value=4.0, key="comp_b")
+                    h = st.number_input(t['height'], min_value=0.1, value=3.0, key="comp_h")
             
             with col2:
-                cx = st.number_input("Center X", value=0.0, key="comp_cx")
-                cy = st.number_input("Center Y", value=0.0, key="comp_cy")
+                cx = st.number_input(t['center_x'], value=0.0, key="comp_cx")
+                cy = st.number_input(t['center_y'], value=0.0, key="comp_cy")
             
-            op_label = "➕ Add" if is_add else "🔴 Cut"
-            if st.button(f"{op_label} Component"):
-                if comp_type == "Rectangle":
+            op_label = t['add_btn'] if is_add else t['cut_btn']
+            if st.button(f"{op_label} {t['add_component']}"):
+                if comp_type == t['rectangle']:
                     component = Rectangle(w, h, cx, cy)
-                elif comp_type == "Circle":
+                elif comp_type == t['circle']:
                     component = Circle(r, cx, cy)
-                elif comp_type == "Triangle":
+                elif comp_type == t['triangle']:
                     component = Triangle(b, h, cx, cy)
                 
                 comp_info = {
@@ -331,7 +344,7 @@ elif page == "2D Analysis":
                 st.rerun()
         
         if st.session_state.components:
-            st.markdown("### Components Table")
+            st.markdown(f"### {t['components_table']}")
             
             table_data = []
             for i, comp in enumerate(st.session_state.components):
@@ -348,7 +361,7 @@ elif page == "2D Analysis":
             
             df = pd.DataFrame(table_data)
             
-            st.markdown("#### Click a row to select, then press delete:")
+            st.markdown(f"#### {t['click_to_select']}")
             selection = st.dataframe(
                 df, 
                 use_container_width=True, 
@@ -363,15 +376,15 @@ elif page == "2D Analysis":
                 if selected_row < len(st.session_state.components):
                     col_del, col_info = st.columns([1, 3])
                     with col_del:
-                        if st.button("🗑️ Delete Selected", type="secondary"):
+                        if st.button(t['delete_selected'], type="secondary"):
                             st.session_state.components.pop(selected_row)
                             st.rerun()
                     with col_info:
                         comp = st.session_state.components[selected_row]
-                        op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
-                        st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
+                        op_text = "ADD" if comp['operation'] == 'add' else "CUT"
+                        st.info(f"{t['selected_info']}: #{selected_row+1} - {comp['type']} ({op_text})")
             
-            st.markdown("### Live Preview")
+            st.markdown(f"### {t['live_preview']}")
             shapes_only = [c['shape'] for c in st.session_state.components]
             operations = [c['operation'] for c in st.session_state.components]
             
@@ -381,31 +394,31 @@ elif page == "2D Analysis":
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Net Area", f"{results['total_area']:.2f} mm²")
+                st.metric(t['net_area'], f"{results['total_area']:.2f} {t['mm2']}")
             with col2:
-                st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+                st.metric(t['centroid_x'], f"{results['centroid_x']:.2f} {t['mm']}")
             with col3:
-                st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+                st.metric(t['centroid_y'], f"{results['centroid_y']:.2f} {t['mm']}")
             
             col_save, col_reset = st.columns([1, 1])
             with col_save:
-                if st.button("💾 Save to Report", type="primary", key="save_comp"):
+                if st.button(t['save_to_report'], type="primary", key="save_comp"):
                     st.session_state.com_data = results
                     st.session_state.preview_image = img_bytes
-                    st.success("Results saved! Go to Report Generator to export.")
+                    st.success(t['results_saved'])
             with col_reset:
                 st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-                if st.button("🔄 Reset All", key="reset_2d_comp"):
+                if st.button(t['reset_all'], key="reset_2d_comp"):
                     st.session_state.components = []
                     st.session_state.com_data = None
                     st.session_state.preview_image = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
     
-    elif mode == "Coordinate Input":
-        st.markdown("### Polygon Coordinate Input")
+    elif mode == t['coordinate_input']:
+        st.markdown(f"### {t['polygon_coordinate_input']}")
         coordinates_text = st.text_area(
-            "Enter coordinates (one per line: x,y)",
+            t['enter_coordinates'],
             "0,0\n10,0\n10,5\n5,8\n0,5",
             height=150
         )
@@ -418,182 +431,180 @@ elif page == "2D Analysis":
                 polygon = Polygon(coordinates)
                 results = analyzer.analyze_2d(polygon)
                 
-                st.markdown("### Live Preview")
+                st.markdown(f"### {t['live_preview']}")
                 img_bytes = plotter.plot_polygon_with_centroid(coordinates, results)
                 st.image(img_bytes, use_column_width=True)
                 
                 col1, col2, col3 = st.columns(3)
                 with col1:
-                    st.metric("Area", f"{results['area']:.2f} mm²")
+                    st.metric(t['area'], f"{results['area']:.2f} {t['mm2']}")
                 with col2:
-                    st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+                    st.metric(t['centroid_x'], f"{results['centroid_x']:.2f} {t['mm']}")
                 with col3:
-                    st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+                    st.metric(t['centroid_y'], f"{results['centroid_y']:.2f} {t['mm']}")
                 
                 col_save, col_reset = st.columns([1, 1])
                 with col_save:
-                    if st.button("💾 Save to Report", type="primary", key="save_poly"):
+                    if st.button(t['save_to_report'], type="primary", key="save_poly"):
                         st.session_state.com_data = results
                         st.session_state.preview_image = img_bytes
-                        st.success("Results saved! Go to Report Generator to export.")
+                        st.success(t['results_saved'])
                 with col_reset:
                     st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-                    if st.button("🔄 Reset", key="reset_poly"):
+                    if st.button(t['reset_btn'], key="reset_poly"):
                         st.session_state.com_data = None
                         st.session_state.preview_image = None
                         st.rerun()
                     st.markdown('</div>', unsafe_allow_html=True)
             else:
-                st.warning("Please enter at least 3 coordinates")
+                st.warning(t['need_3_coordinates'])
         except:
-            st.error("Invalid coordinate format")
+            st.error(t['invalid_coordinate'])
 
 elif page == "3D Analysis":
-    st.markdown(f"## {translations['3d_analysis']}")
+    st.markdown(f"## {t['3d_analysis']}")
     
-    mode = st.radio("Input Mode", ["Simple Shapes", "Composite Geometry"], horizontal=True)
+    mode = st.radio(t['input_mode'], [t['simple_shapes'], t['composite_geometry']], horizontal=True)
     
-    if mode == "Simple Shapes":
-        shape_type = st.selectbox("Shape Type", ["Cube", "Box", "Sphere", "Cylinder", "Cone", "Pyramid"])
+    if mode == t['simple_shapes']:
+        shape_type = st.selectbox(t['shape_type'], [t['cube'], t['box'], t['sphere'], t['cylinder'], t['cone'], t['pyramid']])
         
         col1, col2 = st.columns(2)
         
         with col1:
-            if shape_type == "Cube":
-                length = st.number_input("Length", min_value=0.1, value=10.0)
-                width = st.number_input("Width", min_value=0.1, value=10.0)
-                height = st.number_input("Height", min_value=0.1, value=10.0)
+            if shape_type == t['cube']:
+                length = st.number_input(t['length'], min_value=0.1, value=10.0)
+                width = st.number_input(t['width'], min_value=0.1, value=10.0)
+                height = st.number_input(t['height'], min_value=0.1, value=10.0)
                 shape = Cube(length, width, height)
-            elif shape_type == "Box":
-                length = st.number_input("Length", min_value=0.1, value=8.0)
-                width = st.number_input("Width", min_value=0.1, value=6.0)
-                height = st.number_input("Height", min_value=0.1, value=4.0)
+            elif shape_type == t['box']:
+                length = st.number_input(t['length'], min_value=0.1, value=8.0)
+                width = st.number_input(t['width'], min_value=0.1, value=6.0)
+                height = st.number_input(t['height'], min_value=0.1, value=4.0)
                 shape = Box(length, width, height)
-            elif shape_type == "Sphere":
-                radius = st.number_input("Radius", min_value=0.1, value=5.0)
+            elif shape_type == t['sphere']:
+                radius = st.number_input(t['radius'], min_value=0.1, value=5.0)
                 shape = Sphere(radius)
-            elif shape_type == "Cylinder":
-                radius = st.number_input("Radius", min_value=0.1, value=3.0)
-                height = st.number_input("Height", min_value=0.1, value=10.0)
+            elif shape_type == t['cylinder']:
+                radius = st.number_input(t['radius'], min_value=0.1, value=3.0)
+                height = st.number_input(t['height'], min_value=0.1, value=10.0)
                 shape = Cylinder(radius, height)
-            elif shape_type == "Cone":
-                radius = st.number_input("Base Radius", min_value=0.1, value=3.0)
-                height = st.number_input("Height", min_value=0.1, value=8.0)
+            elif shape_type == t['cone']:
+                radius = st.number_input(t['base_radius'], min_value=0.1, value=3.0)
+                height = st.number_input(t['height'], min_value=0.1, value=8.0)
                 shape = Cone(radius, height)
-            elif shape_type == "Pyramid":
-                base_length = st.number_input("Base Length", min_value=0.1, value=6.0)
-                base_width = st.number_input("Base Width", min_value=0.1, value=6.0)
-                height = st.number_input("Height", min_value=0.1, value=8.0)
+            elif shape_type == t['pyramid']:
+                base_length = st.number_input(t['base_length'], min_value=0.1, value=6.0)
+                base_width = st.number_input(t['base_width'], min_value=0.1, value=6.0)
+                height = st.number_input(t['height'], min_value=0.1, value=8.0)
                 shape = Pyramid(base_length, base_width, height)
         
         with col2:
-            pos_x = st.number_input("Position X", value=0.0)
-            pos_y = st.number_input("Position Y", value=0.0)
-            pos_z = st.number_input("Position Z", value=0.0)
+            pos_x = st.number_input(t['position_x'], value=0.0)
+            pos_y = st.number_input(t['position_y'], value=0.0)
+            pos_z = st.number_input(t['position_z'], value=0.0)
             shape.set_position(pos_x, pos_y, pos_z)
         
-        st.markdown("### Live Preview")
+        st.markdown(f"### {t['live_preview']}")
         analyzer = COMAnalyzer()
         results = analyzer.analyze_3d(shape)
         plotter_3d = Plotter3D()
         fig = plotter_3d.plot_3d_shape_with_centroid(shape, results)
         st.plotly_chart(fig, use_container_width=True, key="live_3d")
         
-        # Save isometric view as image for report
         img_bytes = fig.to_image(format="png", width=1200, height=800)
         
         col1, col2, col3, col4 = st.columns(4)
         with col1:
-            st.metric("Volume", f"{results['volume']:.2f} mm³")
+            st.metric(t['volume'], f"{results['volume']:.2f} {t['mm3']}")
         with col2:
-            st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
+            st.metric(t['centroid_x'], f"{results['centroid_x']:.2f} {t['mm']}")
         with col3:
-            st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
+            st.metric(t['centroid_y'], f"{results['centroid_y']:.2f} {t['mm']}")
         with col4:
-            st.metric("Centroid Z", f"{results['centroid_z']:.2f} mm")
+            st.metric(t['centroid_z'], f"{results['centroid_z']:.2f} {t['mm']}")
         
         col_save, col_reset = st.columns([1, 1])
         with col_save:
-            if st.button("💾 Save to Report", type="primary", key="save_3d"):
+            if st.button(t['save_to_report'], type="primary", key="save_3d"):
                 st.session_state.com_data = results
                 st.session_state.preview_image = img_bytes
-                st.success("Results saved! Go to Report Generator to export.")
+                st.success(t['results_saved'])
         with col_reset:
             st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-            if st.button("🔄 Reset Shape", key="reset_3d"):
+            if st.button(t['reset_shape'], key="reset_3d"):
                 st.session_state.com_data = None
                 st.session_state.preview_image = None
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
         
-        if shape_type in ["Cube", "Box", "Cylinder"]:
+        if shape_type in [t['cube'], t['box'], t['cylinder']]:
             st.markdown("---")
-            st.markdown("### Stability Analysis")
+            st.markdown(f"### {t['stability_analysis']}")
             if results['centroid_z'] < height/2:
-                stability, stability_class = "Stable", "status-stable"
+                stability, stability_class = t['stable'], "status-stable"
             else:
-                stability, stability_class = "Potentially Unstable", "status-unstable"
-            st.markdown(f'<div class="kpi-card"><h4>Stability: <span class="{stability_class}">{stability}</span></h4><p>Centroid height: {results["centroid_z"]:.2f} mm</p></div>', unsafe_allow_html=True)
+                stability, stability_class = t['potentially_unstable'], "status-unstable"
+            st.markdown(f'<div class="kpi-card"><h4>{t["stability_status"]}: <span class="{stability_class}">{stability}</span></h4><p>{t["centroid_height"]}: {results["centroid_z"]:.2f} {t["mm"]}</p></div>', unsafe_allow_html=True)
     
-    elif mode == "Composite Geometry":
-        st.markdown("### 3D Composite Builder")
+    elif mode == t['composite_geometry']:
+        st.markdown(f"### {t['composite_3d_builder']}")
         
         if 'components_3d' not in st.session_state:
             st.session_state.components_3d = []
         
-        with st.expander("➕ Add 3D Component", expanded=True):
-            comp_type = st.selectbox("Component Type", ["Cube", "Box", "Sphere", "Cylinder", "Cone", "Pyramid"])
+        with st.expander(t['add_3d_component'], expanded=True):
+            comp_type = st.selectbox(t['shape_type'], [t['cube'], t['box'], t['sphere'], t['cylinder'], t['cone'], t['pyramid']])
             
             operation = st.radio(
-                "Operation",
-                ["🟢 Add Material", "🔴 Cut Hole"],
+                t['operation'],
+                [t['add_material'], t['cut_hole']],
                 horizontal=True,
-                help="Add: adds to total volume. Cut: subtracts from total volume"
             )
-            is_add = (operation == "🟢 Add Material")
+            is_add = (operation == t['add_material'])
             
             col1, col2 = st.columns(2)
             
             with col1:
-                if comp_type == "Cube":
-                    l = st.number_input("Length", min_value=0.1, value=5.0, key="c3d_l")
-                    w = st.number_input("Width", min_value=0.1, value=5.0, key="c3d_w")
-                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
-                elif comp_type == "Box":
-                    l = st.number_input("Length", min_value=0.1, value=6.0, key="c3d_l")
-                    w = st.number_input("Width", min_value=0.1, value=4.0, key="c3d_w")
-                    h = st.number_input("Height", min_value=0.1, value=3.0, key="c3d_h")
-                elif comp_type == "Sphere":
-                    r = st.number_input("Radius", min_value=0.1, value=3.0, key="c3d_r")
-                elif comp_type == "Cylinder":
-                    r = st.number_input("Radius", min_value=0.1, value=2.0, key="c3d_r")
-                    h = st.number_input("Height", min_value=0.1, value=6.0, key="c3d_h")
-                elif comp_type == "Cone":
-                    r = st.number_input("Base Radius", min_value=0.1, value=2.0, key="c3d_r")
-                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
-                elif comp_type == "Pyramid":
-                    bl = st.number_input("Base Length", min_value=0.1, value=4.0, key="c3d_bl")
-                    bw = st.number_input("Base Width", min_value=0.1, value=4.0, key="c3d_bw")
-                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
+                if comp_type == t['cube']:
+                    l = st.number_input(t['length'], min_value=0.1, value=5.0, key="c3d_l")
+                    w = st.number_input(t['width'], min_value=0.1, value=5.0, key="c3d_w")
+                    h = st.number_input(t['height'], min_value=0.1, value=5.0, key="c3d_h")
+                elif comp_type == t['box']:
+                    l = st.number_input(t['length'], min_value=0.1, value=6.0, key="c3d_l")
+                    w = st.number_input(t['width'], min_value=0.1, value=4.0, key="c3d_w")
+                    h = st.number_input(t['height'], min_value=0.1, value=3.0, key="c3d_h")
+                elif comp_type == t['sphere']:
+                    r = st.number_input(t['radius'], min_value=0.1, value=3.0, key="c3d_r")
+                elif comp_type == t['cylinder']:
+                    r = st.number_input(t['radius'], min_value=0.1, value=2.0, key="c3d_r")
+                    h = st.number_input(t['height'], min_value=0.1, value=6.0, key="c3d_h")
+                elif comp_type == t['cone']:
+                    r = st.number_input(t['base_radius'], min_value=0.1, value=2.0, key="c3d_r")
+                    h = st.number_input(t['height'], min_value=0.1, value=5.0, key="c3d_h")
+                elif comp_type == t['pyramid']:
+                    bl = st.number_input(t['base_length'], min_value=0.1, value=4.0, key="c3d_bl")
+                    bw = st.number_input(t['base_width'], min_value=0.1, value=4.0, key="c3d_bw")
+                    h = st.number_input(t['height'], min_value=0.1, value=5.0, key="c3d_h")
             
             with col2:
-                px = st.number_input("Position X", value=0.0, key="c3d_px")
-                py = st.number_input("Position Y", value=0.0, key="c3d_py")
-                pz = st.number_input("Position Z", value=0.0, key="c3d_pz")
+                px = st.number_input(t['position_x'], value=0.0, key="c3d_px")
+                py = st.number_input(t['position_y'], value=0.0, key="c3d_py")
+                pz = st.number_input(t['position_z'], value=0.0, key="c3d_pz")
             
-            op_label = "➕ Add" if is_add else "🔴 Cut"
-            if st.button(f"{op_label} Component"):
-                if comp_type == "Cube":
+            op_label = t['add_btn'] if is_add else t['cut_btn']
+            if st.button(f"{op_label} {t['add_component']}"):
+                if comp_type == t['cube']:
                     shape = Cube(l, w, h, px, py, pz)
-                elif comp_type == "Box":
+                elif comp_type == t['box']:
                     shape = Box(l, w, h, px, py, pz)
-                elif comp_type == "Sphere":
+                elif comp_type == t['sphere']:
                     shape = Sphere(r, px, py, pz)
-                elif comp_type == "Cylinder":
+                elif comp_type == t['cylinder']:
                     shape = Cylinder(r, h, px, py, pz)
-                elif comp_type == "Cone":
+                elif comp_type == t['cone']:
                     shape = Cone(r, h, px, py, pz)
-                elif comp_type == "Pyramid":
+                elif comp_type == t['pyramid']:
                     shape = Pyramid(bl, bw, h, px, py, pz)
                 
                 comp_info = {
@@ -606,7 +617,7 @@ elif page == "3D Analysis":
                 st.rerun()
         
         if st.session_state.components_3d:
-            st.markdown("### 3D Components Table")
+            st.markdown(f"### {t['components_3d_table']}")
             
             table_data = []
             for i, comp in enumerate(st.session_state.components_3d):
@@ -623,7 +634,7 @@ elif page == "3D Analysis":
             
             df = pd.DataFrame(table_data)
             
-            st.markdown("#### Click a row to select, then press delete:")
+            st.markdown(f"#### {t['click_to_select']}")
             selection = st.dataframe(
                 df, use_container_width=True, hide_index=True,
                 selection_mode="single-row", on_select="rerun",
@@ -633,11 +644,11 @@ elif page == "3D Analysis":
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
                 if selected_row < len(st.session_state.components_3d):
-                    if st.button("🗑️ Delete Selected", type="secondary"):
+                    if st.button(t['delete_selected'], type="secondary"):
                         st.session_state.components_3d.pop(selected_row)
                         st.rerun()
             
-            st.markdown("### Live Preview (3D Composite)")
+            st.markdown(f"### {t['live_preview_3d']}")
             shapes_only = [c['shape'] for c in st.session_state.components_3d]
             operations = [c['operation'] for c in st.session_state.components_3d]
             
@@ -646,28 +657,27 @@ elif page == "3D Analysis":
             fig = plotter_3d.plot_composite_3d(results_3d)
             st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
             
-            # Save isometric view as image for report
             img_bytes = fig.to_image(format="png", width=1200, height=800)
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Net Volume", f"{results_3d['total_volume']:.2f} mm³")
+                st.metric(t['net_volume'], f"{results_3d['total_volume']:.2f} {t['mm3']}")
             with col2:
-                st.metric("Centroid X", f"{results_3d['centroid_x']:.2f} mm")
+                st.metric(t['centroid_x'], f"{results_3d['centroid_x']:.2f} {t['mm']}")
             with col3:
-                st.metric("Centroid Y", f"{results_3d['centroid_y']:.2f} mm")
+                st.metric(t['centroid_y'], f"{results_3d['centroid_y']:.2f} {t['mm']}")
             with col4:
-                st.metric("Centroid Z", f"{results_3d['centroid_z']:.2f} mm")
+                st.metric(t['centroid_z'], f"{results_3d['centroid_z']:.2f} {t['mm']}")
             
             col_save, col_reset = st.columns([1, 1])
             with col_save:
-                if st.button("💾 Save to Report", type="primary", key="save_3d_comp"):
+                if st.button(t['save_to_report'], type="primary", key="save_3d_comp"):
                     st.session_state.com_data = results_3d
                     st.session_state.preview_image = img_bytes
-                    st.success("Results saved! Go to Report Generator to export.")
+                    st.success(t['results_saved'])
             with col_reset:
                 st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-                if st.button("🔄 Reset All", key="reset_3d_comp"):
+                if st.button(t['reset_all'], key="reset_3d_comp"):
                     st.session_state.components_3d = []
                     st.session_state.com_data = None
                     st.session_state.preview_image = None
@@ -675,9 +685,9 @@ elif page == "3D Analysis":
                 st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "STL Import":
-    st.markdown(f"## {translations['stl_import']}")
+    st.markdown(f"## {t['stl_import']}")
     
-    uploaded_file = st.file_uploader("Upload STL File", type=['stl'])
+    uploaded_file = st.file_uploader(t['upload_stl'], type=['stl'])
     
     if uploaded_file:
         mesh_handler = MeshHandler()
@@ -686,32 +696,31 @@ elif page == "STL Import":
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Vertices", mesh_data['num_vertices'])
+                st.metric(t['vertices'], mesh_data['num_vertices'])
             with col2:
-                st.metric("Faces", mesh_data['num_faces'])
+                st.metric(t['faces'], mesh_data['num_faces'])
             with col3:
-                st.metric("Volume", f"{mesh_data['volume']:.2f} mm³")
+                st.metric(t['volume'], f"{mesh_data['volume']:.2f} {t['mm3']}")
             
             col1, col2, col3, col4 = st.columns(4)
             with col1:
-                st.metric("Volume", f"{mesh_data['volume']:.2f}")
+                st.metric(t['volume'], f"{mesh_data['volume']:.2f}")
             with col2:
-                st.metric("Centroid X", f"{mesh_data['centroid'][0]:.2f}")
+                st.metric(t['centroid_x'], f"{mesh_data['centroid'][0]:.2f}")
             with col3:
-                st.metric("Centroid Y", f"{mesh_data['centroid'][1]:.2f}")
+                st.metric(t['centroid_y'], f"{mesh_data['centroid'][1]:.2f}")
             with col4:
-                st.metric("Centroid Z", f"{mesh_data['centroid'][2]:.2f}")
+                st.metric(t['centroid_z'], f"{mesh_data['centroid'][2]:.2f}")
             
             plotter = Plotter3D()
             fig = plotter.plot_mesh_with_centroid(mesh_data)
             st.plotly_chart(fig, use_container_width=True)
             
-            # Save isometric view as image for report
             img_bytes = fig.to_image(format="png", width=1200, height=800)
             
             col_save, col_reset = st.columns([1, 1])
             with col_save:
-                if st.button("💾 Save to Report", type="primary"):
+                if st.button(t['save_to_report'], type="primary"):
                     results = {
                         'volume': mesh_data['volume'],
                         'centroid_x': mesh_data['centroid'][0],
@@ -720,38 +729,37 @@ elif page == "STL Import":
                     }
                     st.session_state.com_data = results
                     st.session_state.preview_image = img_bytes
-                    st.success("Results saved! Go to Report Generator to export.")
+                    st.success(t['results_saved'])
             with col_reset:
                 st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
-                if st.button("🔄 Reset", key="reset_stl"):
+                if st.button(t['reset_btn'], key="reset_stl"):
                     st.session_state.com_data = None
                     st.session_state.preview_image = None
                     st.rerun()
                 st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Error processing STL file: {str(e)}")
+            st.error(f"{t['error_stl']}: {str(e)}")
 
 elif page == "Report Generator":
-    st.markdown(f"## {translations['report_generator']}")
+    st.markdown(f"## {t['report_generator']}")
     
     if st.session_state.com_data:
-        st.success("Analysis data available for report generation")
+        st.success(t['analysis_available'])
         
-        # Show preview image if available
         if st.session_state.preview_image:
-            st.markdown("### Preview Image (will be included in report)")
+            st.markdown(f"### {t['preview_image_label']}")
             st.image(st.session_state.preview_image, use_column_width=True)
         
         col1, col2 = st.columns(2)
         with col1:
-            project_name = st.text_input("Project Name", "COM Analysis Project")
-            engineer_name = st.text_input("Engineer Name", "")
-            notes = st.text_area("Additional Notes", "")
+            project_name = st.text_input(t['project_name'], "COM Analysis Project")
+            engineer_name = st.text_input(t['engineer_name'], "")
+            notes = st.text_area(t['additional_notes'], "")
         with col2:
-            report_format = st.selectbox("Report Format", ["PDF", "JSON", "CSV"])
+            report_format = st.selectbox(t['report_format'], ["PDF", "JSON", "CSV"])
         
-        if st.button("Generate Report", type="primary"):
-            with st.spinner("Generating report..."):
+        if st.button(t['generate_report'], type="primary"):
+            with st.spinner(t['generating_report']):
                 report_gen = ReportGenerator()
                 ts = datetime.now().strftime('%Y%m%d_%H%M%S')
                 if report_format == "PDF":
@@ -761,30 +769,30 @@ elif page == "Report Generator":
                         engineer_name, 
                         notes,
                         st.session_state.get('preview_image', None),
-translations
+                        translations
                     )
-                    st.download_button("Download PDF", pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
+                    st.download_button(t['download_pdf'], pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
                 elif report_format == "JSON":
                     json_str = report_gen.generate_json(st.session_state.com_data)
-                    st.download_button("Download JSON", json_str, f"com_report_{ts}.json", "application/json")
+                    st.download_button(t['download_json'], json_str, f"com_report_{ts}.json", "application/json")
                 elif report_format == "CSV":
                     csv_bytes = report_gen.generate_csv(st.session_state.com_data)
-                    st.download_button("Download CSV", csv_bytes, f"com_report_{ts}.csv", "text/csv")
+                    st.download_button(t['download_csv'], csv_bytes, f"com_report_{ts}.csv", "text/csv")
     else:
-        st.warning("No analysis data available. Please perform an analysis first.")
+        st.warning(t['no_analysis_data'])
 
 elif page == "Settings":
-    st.markdown(f"## {translations['settings']}")
-    st.markdown("### Unit System")
-    unit_system = st.selectbox("Length Unit", ["mm", "cm", "m", "in"])
-    st.markdown("### Precision")
-    decimal_places = st.slider("Decimal Places", 1, 6, 2)
-    st.markdown("### Visualization Settings")
-    show_grid = st.checkbox("Show Grid", True)
-    show_axes = st.checkbox("Show Axes", True)
-    marker_size = st.slider("Marker Size", 5, 20, 10)
-    if st.button("Save Settings"):
-        st.success("Settings saved successfully!")
+    st.markdown(f"## {t['settings']}")
+    st.markdown(f"### {t['unit_system']}")
+    unit_system = st.selectbox(t['length_unit'], [t['mm'], t['cm'], t['m'], t['in']])
+    st.markdown(f"### {t['precision']}")
+    decimal_places = st.slider(t['decimal_places'], 1, 6, 2)
+    st.markdown(f"### {t['visualization_settings']}")
+    show_grid = st.checkbox(t['show_grid'], True)
+    show_axes = st.checkbox(t['show_axes'], True)
+    marker_size = st.slider(t['marker_size'], 5, 20, 10)
+    if st.button(t['save_settings']):
+        st.success(t['settings_saved'])
 
 # Footer
 st.markdown("---")
