@@ -73,7 +73,6 @@ class Circle(Shape2D):
         return (self.position[0], self.position[1])
     
     def get_vertices(self) -> List[Tuple[float, float]]:
-        # Generate points for circle approximation
         theta = np.linspace(0, 2 * np.pi, 100)
         x = self.position[0] + self.radius * np.cos(theta)
         y = self.position[1] + self.radius * np.sin(theta)
@@ -93,7 +92,6 @@ class Triangle(Shape2D):
         return 0.5 * self.base * self.height
     
     def get_centroid(self) -> Tuple[float, float]:
-        # Centroid of triangle is at 1/3 height from base
         cx = self.position[0]
         cy = self.position[1] + self.height / 3
         return (cx, cy)
@@ -119,11 +117,16 @@ class Polygon(Shape2D):
         """Calculate polygon area using shoelace formula"""
         x = [v[0] for v in self.vertices]
         y = [v[1] for v in self.vertices]
-        return 0.5 * abs(sum(x[i] * y[(i + 1) % len(y)] - x[(i + 1) % len(x)] * y[i] 
-                            for i in range(len(x))))
+        n = len(x)
+        area = 0.0
+        for i in range(n):
+            j = (i + 1) % n
+            area += x[i] * y[j]
+            area -= x[j] * y[i]
+        return abs(area) / 2.0
     
     def get_centroid(self) -> Tuple[float, float]:
-        """Calculate polygon centroid"""
+        """Calculate polygon centroid using the correct formula"""
         x = [v[0] for v in self.vertices]
         y = [v[1] for v in self.vertices]
         n = len(x)
@@ -132,10 +135,17 @@ class Polygon(Shape2D):
         if area == 0:
             return (0, 0)
         
-        cx = sum((x[i] + x[(i + 1) % n]) * (x[i] * y[(i + 1) % n] - x[(i + 1) % n] * y[i]) 
-                 for i in range(n)) / (6 * area)
-        cy = sum((y[i] + y[(i + 1) % n]) * (x[i] * y[(i + 1) % n] - x[(i + 1) % n] * y[i]) 
-                 for i in range(n)) / (6 * area)
+        cx = 0.0
+        cy = 0.0
+        
+        for i in range(n):
+            j = (i + 1) % n
+            cross = x[i] * y[j] - x[j] * y[i]
+            cx += (x[i] + x[j]) * cross
+            cy += (y[i] + y[j]) * cross
+        
+        cx = cx / (6.0 * area)
+        cy = cy / (6.0 * area)
         
         return (cx, cy)
     
