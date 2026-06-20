@@ -6,12 +6,12 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm, inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.graphics.shapes import Drawing
 import json
 import io
 import pandas as pd
 from datetime import datetime
 from typing import Dict, Any
+from PIL import Image as PILImage
 
 
 class ReportGenerator:
@@ -61,14 +61,40 @@ class ReportGenerator:
         story.append(Spacer(1, 20))
         
         # Preview Image (if provided)
-        if preview_image:
+        if preview_image and len(preview_image) > 100:
             story.append(Paragraph("Geometry Preview", heading_style))
             try:
-                # Create image from bytes
-                img = Image(io.BytesIO(preview_image), width=180*mm, height=120*mm)
+                # Convert bytes to PIL Image to verify it's valid
+                pil_img = PILImage.open(io.BytesIO(preview_image))
+                
+                # Get image dimensions
+                img_width, img_height = pil_img.size
+                
+                # Calculate scaled size to fit A4 (max 180mm wide, 120mm tall)
+                max_width = 180 * mm
+                max_height = 120 * mm
+                
+                aspect = img_width / img_height
+                if aspect > max_width / max_height:
+                    # Wider than tall - fit width
+                    draw_width = max_width
+                    draw_height = max_width / aspect
+                else:
+                    # Taller than wide - fit height
+                    draw_height = max_height
+                    draw_width = max_height * aspect
+                
+                # Create temporary file for ReportLab
+                temp_img = io.BytesIO()
+                pil_img.save(temp_img, format='PNG')
+                temp_img.seek(0)
+                
+                # Add image to report
+                img = Image(temp_img, width=draw_width, height=draw_height)
                 story.append(img)
-            except:
-                story.append(Paragraph("(Preview image could not be rendered)", styles['Normal']))
+                
+            except Exception as e:
+                story.append(Paragraph(f"(Preview image error: {str(e)})", styles['Normal']))
             story.append(Spacer(1, 15))
         
         # Analysis Results
@@ -86,7 +112,6 @@ class ReportGenerator:
                 elif 'mass' in key.lower():
                     unit = 'kg'
                 
-                # Clean up key name
                 display_key = key.replace('_', ' ').title()
                 if 'total' in key.lower():
                     display_key = display_key.replace('Total ', 'Total ')
@@ -129,7 +154,6 @@ class ReportGenerator:
     
     def generate_json(self, analysis_data: Dict[str, Any]) -> str:
         """Generate JSON report"""
-        # Remove non-serializable items
         clean_data = {}
         for key, value in analysis_data.items():
             if isinstance(value, (int, float, str, bool, list, dict)):
