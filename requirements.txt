@@ -10,3 +10,4 @@ numpy-stl>=3.0.0
 reportlab>=4.0.0
 shapely>=2.0.0
 pillow>=10.0.0
+kaleido==0.2.1
