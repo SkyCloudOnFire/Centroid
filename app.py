@@ -21,6 +21,8 @@ from modules.visualization.plotter_2d import Plotter2D
 from modules.visualization.plotter_3d import Plotter3D
 from modules.reporting.report_generator import ReportGenerator
 from modules.mesh.mesh_handler import MeshHandler
+from io import BytesIO
+import base64
 
 # Initialize configurations
 config = ConfigManager()
@@ -73,9 +75,11 @@ def load_css(theme, rtl=False):
         .stTextArea > div > div > textarea { direction: rtl !important; text-align: right !important; }
         .add-badge { display: inline-block; background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
         .cut-badge { display: inline-block; background: #ef4444; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .reset-btn button { background: #ef4444 !important; color: white !important; border: none !important; }
     """ if rtl else """
         .add-badge { display: inline-block; background: #10b981; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
         .cut-badge { display: inline-block; background: #ef4444; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+        .reset-btn button { background: #ef4444 !important; color: white !important; border: none !important; }
     """
     
     st.markdown(f"""
@@ -119,6 +123,9 @@ def load_css(theme, rtl=False):
             font-size: 0.95rem !important; line-height: 1.6 !important; width: 100% !important;
         }}
         
+        .reset-btn button {{ background: #ef4444 !important; color: white !important; border: none !important; }}
+        .reset-btn button:hover {{ background: #dc2626 !important; }}
+        
         .status-stable {{ color: #10b981 !important; font-weight: 600; }}
         .status-unstable {{ color: #ef4444 !important; font-weight: 600; }}
         .section-title {{ font-size: 1.25rem; font-weight: 600; margin: 1rem 0; color: {section_title_color}; }}
@@ -138,7 +145,6 @@ with st.sidebar:
     
     nav_options = ["Home", "2D Analysis", "3D Analysis", "STL Import", "Report Generator", "Settings"]
     
-    # Ensure page is valid
     if st.session_state.page not in nav_options:
         st.session_state.page = "Home"
     
@@ -178,6 +184,8 @@ st.markdown(f"""
 
 if 'com_data' not in st.session_state:
     st.session_state.com_data = None
+if 'preview_image' not in st.session_state:
+    st.session_state.preview_image = None
 
 # Page routing
 if page == "Home":
@@ -257,9 +265,19 @@ elif page == "2D Analysis":
         with col3:
             st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
         
-        if st.button("💾 Save to Report", type="primary"):
-            st.session_state.com_data = results
-            st.success("Results saved! Go to Report Generator to export.")
+        col_save, col_reset = st.columns([1, 1])
+        with col_save:
+            if st.button("💾 Save to Report", type="primary"):
+                st.session_state.com_data = results
+                st.session_state.preview_image = img_bytes
+                st.success("Results saved! Go to Report Generator to export.")
+        with col_reset:
+            st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+            if st.button("🔄 Reset Shape", key="reset_2d_simple"):
+                st.session_state.com_data = None
+                st.session_state.preview_image = None
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
     
     elif mode == "Composite Geometry":
         st.markdown("### Composite Shape Builder")
@@ -342,7 +360,6 @@ elif page == "2D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                # SAFETY CHECK: ensure row still exists after delete
                 if selected_row < len(st.session_state.components):
                     col_del, col_info = st.columns([1, 3])
                     with col_del:
@@ -354,7 +371,6 @@ elif page == "2D Analysis":
                         op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
                         st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
             
-            # LIVE PREVIEW - Uses Shapely via analyzer for proper holes
             st.markdown("### Live Preview")
             shapes_only = [c['shape'] for c in st.session_state.components]
             operations = [c['operation'] for c in st.session_state.components]
@@ -371,9 +387,20 @@ elif page == "2D Analysis":
             with col3:
                 st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
             
-            if st.button("💾 Save to Report", type="primary"):
-                st.session_state.com_data = results
-                st.success("Results saved! Go to Report Generator to export.")
+            col_save, col_reset = st.columns([1, 1])
+            with col_save:
+                if st.button("💾 Save to Report", type="primary", key="save_comp"):
+                    st.session_state.com_data = results
+                    st.session_state.preview_image = img_bytes
+                    st.success("Results saved! Go to Report Generator to export.")
+            with col_reset:
+                st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+                if st.button("🔄 Reset All", key="reset_2d_comp"):
+                    st.session_state.components = []
+                    st.session_state.com_data = None
+                    st.session_state.preview_image = None
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
     
     elif mode == "Coordinate Input":
         st.markdown("### Polygon Coordinate Input")
@@ -403,9 +430,19 @@ elif page == "2D Analysis":
                 with col3:
                     st.metric("Centroid Y", f"{results['centroid_y']:.2f} mm")
                 
-                if st.button("💾 Save to Report", type="primary"):
-                    st.session_state.com_data = results
-                    st.success("Results saved! Go to Report Generator to export.")
+                col_save, col_reset = st.columns([1, 1])
+                with col_save:
+                    if st.button("💾 Save to Report", type="primary", key="save_poly"):
+                        st.session_state.com_data = results
+                        st.session_state.preview_image = img_bytes
+                        st.success("Results saved! Go to Report Generator to export.")
+                with col_reset:
+                    st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+                    if st.button("🔄 Reset", key="reset_poly"):
+                        st.session_state.com_data = None
+                        st.session_state.preview_image = None
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.warning("Please enter at least 3 coordinates")
         except:
@@ -462,6 +499,9 @@ elif page == "3D Analysis":
         fig = plotter_3d.plot_3d_shape_with_centroid(shape, results)
         st.plotly_chart(fig, use_container_width=True, key="live_3d")
         
+        # Save figure as image for report
+        img_bytes = fig.to_image(format="png", width=1200, height=800)
+        
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Volume", f"{results['volume']:.2f} mm³")
@@ -472,9 +512,19 @@ elif page == "3D Analysis":
         with col4:
             st.metric("Centroid Z", f"{results['centroid_z']:.2f} mm")
         
-        if st.button("💾 Save to Report", type="primary"):
-            st.session_state.com_data = results
-            st.success("Results saved! Go to Report Generator to export.")
+        col_save, col_reset = st.columns([1, 1])
+        with col_save:
+            if st.button("💾 Save to Report", type="primary", key="save_3d"):
+                st.session_state.com_data = results
+                st.session_state.preview_image = img_bytes
+                st.success("Results saved! Go to Report Generator to export.")
+        with col_reset:
+            st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+            if st.button("🔄 Reset Shape", key="reset_3d"):
+                st.session_state.com_data = None
+                st.session_state.preview_image = None
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
         
         if shape_type in ["Cube", "Box", "Cylinder"]:
             st.markdown("---")
@@ -582,7 +632,6 @@ elif page == "3D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                # SAFETY CHECK: ensure row still exists
                 if selected_row < len(st.session_state.components_3d):
                     if st.button("🗑️ Delete Selected", type="secondary"):
                         st.session_state.components_3d.pop(selected_row)
@@ -597,6 +646,8 @@ elif page == "3D Analysis":
             fig = plotter_3d.plot_composite_3d(results_3d)
             st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
             
+            img_bytes = fig.to_image(format="png", width=1200, height=800)
+            
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Net Volume", f"{results_3d['total_volume']:.2f} mm³")
@@ -607,9 +658,20 @@ elif page == "3D Analysis":
             with col4:
                 st.metric("Centroid Z", f"{results_3d['centroid_z']:.2f} mm")
             
-            if st.button("💾 Save to Report", type="primary"):
-                st.session_state.com_data = results_3d
-                st.success("Results saved! Go to Report Generator to export.")
+            col_save, col_reset = st.columns([1, 1])
+            with col_save:
+                if st.button("💾 Save to Report", type="primary", key="save_3d_comp"):
+                    st.session_state.com_data = results_3d
+                    st.session_state.preview_image = img_bytes
+                    st.success("Results saved! Go to Report Generator to export.")
+            with col_reset:
+                st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+                if st.button("🔄 Reset All", key="reset_3d_comp"):
+                    st.session_state.components_3d = []
+                    st.session_state.com_data = None
+                    st.session_state.preview_image = None
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "STL Import":
     st.markdown(f"## {translations['stl_import']}")
@@ -642,6 +704,28 @@ elif page == "STL Import":
             plotter = Plotter3D()
             fig = plotter.plot_mesh_with_centroid(mesh_data)
             st.plotly_chart(fig, use_container_width=True)
+            
+            img_bytes = fig.to_image(format="png", width=1200, height=800)
+            
+            col_save, col_reset = st.columns([1, 1])
+            with col_save:
+                if st.button("💾 Save to Report", type="primary"):
+                    results = {
+                        'volume': mesh_data['volume'],
+                        'centroid_x': mesh_data['centroid'][0],
+                        'centroid_y': mesh_data['centroid'][1],
+                        'centroid_z': mesh_data['centroid'][2]
+                    }
+                    st.session_state.com_data = results
+                    st.session_state.preview_image = img_bytes
+                    st.success("Results saved! Go to Report Generator to export.")
+            with col_reset:
+                st.markdown('<div class="reset-btn">', unsafe_allow_html=True)
+                if st.button("🔄 Reset", key="reset_stl"):
+                    st.session_state.com_data = None
+                    st.session_state.preview_image = None
+                    st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Error processing STL file: {str(e)}")
 
@@ -650,6 +734,11 @@ elif page == "Report Generator":
     
     if st.session_state.com_data:
         st.success("Analysis data available for report generation")
+        
+        # Show preview image if available
+        if st.session_state.preview_image:
+            st.markdown("### Preview Image (will be included in report)")
+            st.image(st.session_state.preview_image, use_column_width=True)
         
         col1, col2 = st.columns(2)
         with col1:
@@ -664,7 +753,13 @@ elif page == "Report Generator":
                 report_gen = ReportGenerator()
                 ts = datetime.now().strftime('%Y%m%d_%H%M%S')
                 if report_format == "PDF":
-                    pdf_bytes = report_gen.generate_pdf(st.session_state.com_data, project_name, engineer_name, notes)
+                    pdf_bytes = report_gen.generate_pdf(
+                        st.session_state.com_data, 
+                        project_name, 
+                        engineer_name, 
+                        notes,
+                        st.session_state.preview_image  # Pass image to report
+                    )
                     st.download_button("Download PDF", pdf_bytes, f"com_report_{ts}.pdf", "application/pdf")
                 elif report_format == "JSON":
                     json_str = report_gen.generate_json(st.session_state.com_data)
