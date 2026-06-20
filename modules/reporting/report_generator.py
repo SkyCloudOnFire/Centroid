@@ -6,16 +6,46 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm, inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 import json
 import io
 import pandas as pd
 from datetime import datetime
 from typing import Dict, Any
 from PIL import Image as PILImage
+import os
 
 
 class ReportGenerator:
     """Generate various report formats"""
+    
+    def __init__(self):
+        """Register Persian-compatible fonts"""
+        try:
+            # Try to register DejaVu Sans (supports Arabic/Persian)
+            # Most Linux systems have this font
+            font_paths = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/TTF/DejaVuSans.ttf',
+                '/usr/share/fonts/dejavu/DejaVuSans.ttf',
+                '/System/Library/Fonts/Supplemental/Arial.ttf',  # Mac fallback
+            ]
+            
+            font_registered = False
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    pdfmetrics.registerFont(TTFont('PersianFont', font_path))
+                    font_registered = True
+                    break
+            
+            if not font_registered:
+                # Fallback: use Helvetica (no Persian support but won't crash)
+                self.persian_font = 'Helvetica'
+            else:
+                self.persian_font = 'PersianFont'
+        except:
+            self.persian_font = 'Helvetica'
     
     def generate_pdf(self, analysis_data: Dict[str, Any], 
                      project_name: str = "COM Analysis",
@@ -26,11 +56,14 @@ class ReportGenerator:
         """Generate PDF report with optional preview image and language support"""
         buffer = io.BytesIO()
         
-        # Default English labels if no translations provided
         if translations is None:
             translations = {}
         
         t = lambda key, default: translations.get(key, default)
+        
+        # Detect if Persian is needed
+        is_persian = any(ord(c) > 127 for c in (t('report_analysis_results', 'Analysis Results')))
+        font_name = self.persian_font if is_persian else 'Helvetica'
         
         doc = SimpleDocTemplate(
             buffer,
@@ -42,17 +75,27 @@ class ReportGenerator:
         )
         
         styles = getSampleStyleSheet()
+        
+        # Create styles with Persian-compatible font
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
+            fontName=font_name,
             fontSize=24,
             spaceAfter=30
         )
         heading_style = ParagraphStyle(
             'CustomHeading',
             parent=styles['Heading2'],
+            fontName=font_name,
             fontSize=16,
             spaceAfter=12
+        )
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontName=font_name,
+            fontSize=12
         )
         
         story = []
@@ -60,10 +103,10 @@ class ReportGenerator:
         # Title
         story.append(Paragraph(project_name, title_style))
         story.append(Paragraph(f"{t('report_generated_on', 'Generated')}: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
-                              styles['Normal']))
+                              normal_style))
         
         if engineer_name:
-            story.append(Paragraph(f"{t('report_engineer', 'Engineer')}: {engineer_name}", styles['Normal']))
+            story.append(Paragraph(f"{t('report_engineer', 'Engineer')}: {engineer_name}", normal_style))
         
         story.append(Spacer(1, 20))
         
@@ -104,7 +147,7 @@ class ReportGenerator:
                     story.append(Spacer(1, 15))
                     
             except Exception as e:
-                story.append(Paragraph(f"({t('report_image_error', 'Preview image could not be rendered')})", styles['Normal']))
+                story.append(Paragraph(f"({t('report_image_error', 'Preview image could not be rendered')})", normal_style))
                 story.append(Spacer(1, 10))
         
         # Analysis Results
@@ -134,8 +177,9 @@ class ReportGenerator:
                 ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#667eea')),
                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTNAME', (0, 0), (-1, -1), font_name),
                 ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('FONTSIZE', (0, 1), (-1, -1), 10),
                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
                 ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f8f9fa')),
                 ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#dee2e6'))
@@ -146,13 +190,13 @@ class ReportGenerator:
         if notes:
             story.append(Spacer(1, 20))
             story.append(Paragraph(t('report_notes', 'Additional Notes'), heading_style))
-            story.append(Paragraph(notes, styles['Normal']))
+            story.append(Paragraph(notes, normal_style))
         
         # Footer
         story.append(Spacer(1, 30))
         story.append(Paragraph(
             t('report_generated_by', 'Generated by Center of Mass & Centroid Analysis System'),
-            styles['Normal']
+            normal_style
         ))
         
         doc.build(story)
