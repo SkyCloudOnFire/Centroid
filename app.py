@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
+import numpy as np
 from modules.utils.config import ConfigManager
 from modules.utils.theme import ThemeManager
 from modules.utils.language import LanguageManager
@@ -103,7 +104,44 @@ def load_css(theme, rtl=False):
             direction: rtl !important;
             text-align: right !important;
         }
-    """ if rtl else ""
+        .add-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .cut-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    """ if rtl else """
+        .add-badge {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .cut-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    """
     
     st.markdown(f"""
         <style>
@@ -177,7 +215,6 @@ def load_css(theme, rtl=False):
             letter-spacing: 0.05em;
         }}
         
-        /* Default button - normal size */
         .stButton > button {{
             border-radius: 8px;
             padding: 0.5rem 1.2rem;
@@ -195,7 +232,6 @@ def load_css(theme, rtl=False):
             border-color: #667eea;
         }}
         
-        /* Big navigation buttons on Home page only */
         .big-nav-btn button {{
             border-radius: 12px !important;
             padding: 1.5rem !important;
@@ -358,7 +394,6 @@ elif page == "2D Analysis":
             center_y = st.number_input("Center Y", value=0.0, step=0.1)
             shape.set_position(center_x, center_y)
         
-        # LIVE PREVIEW
         st.markdown("### Live Preview")
         results = analyzer.analyze_2d(shape)
         fig = plotter.plot_shape_with_centroid(shape, results)
@@ -382,8 +417,18 @@ elif page == "2D Analysis":
         if 'components' not in st.session_state:
             st.session_state.components = []
         
-        with st.expander("Add Component", expanded=True):
+        with st.expander("➕ Add Component", expanded=True):
             comp_type = st.selectbox("Component Type", ["Rectangle", "Circle", "Triangle"])
+            
+            # Add/Cut toggle
+            operation = st.radio(
+                "Operation",
+                ["🟢 Add Material", "🔴 Cut Hole"],
+                horizontal=True,
+                help="Add: adds to total area. Cut: subtracts from total area (creates holes)"
+            )
+            is_add = (operation == "🟢 Add Material")
+            
             col1, col2 = st.columns(2)
             
             with col1:
@@ -400,7 +445,8 @@ elif page == "2D Analysis":
                 cx = st.number_input("Center X", value=0.0, key="comp_cx")
                 cy = st.number_input("Center Y", value=0.0, key="comp_cy")
             
-            if st.button("➕ Add Component"):
+            op_label = "➕ Add" if is_add else "🔴 Cut"
+            if st.button(f"{op_label} Component"):
                 if comp_type == "Rectangle":
                     component = Rectangle(w, h, cx, cy)
                 elif comp_type == "Circle":
@@ -409,9 +455,10 @@ elif page == "2D Analysis":
                     component = Triangle(b, h, cx, cy)
                 
                 comp_info = {
-                    'name': f"Component {len(st.session_state.components)+1}",
+                    'name': f"Comp {len(st.session_state.components)+1}",
                     'type': comp_type,
-                    'shape': component
+                    'shape': component,
+                    'operation': 'add' if is_add else 'cut'
                 }
                 st.session_state.components.append(comp_info)
                 st.rerun()
@@ -422,19 +469,27 @@ elif page == "2D Analysis":
             table_data = []
             for i, comp in enumerate(st.session_state.components):
                 shape = comp['shape']
+                op_badge = "<span class='add-badge'>ADD</span>" if comp['operation'] == 'add' else "<span class='cut-badge'>CUT</span>"
+                area_val = shape.get_area()
+                sign = "+" if comp['operation'] == 'add' else "-"
                 table_data.append({
                     '#': i+1,
+                    'Op': op_badge,
                     'Type': comp['type'],
-                    'Area': f"{shape.get_area():.2f}",
+                    'Area': f"{sign}{area_val:.2f}",
                     'Centroid': f"({shape.get_centroid()[0]:.1f}, {shape.get_centroid()[1]:.1f})"
                 })
             
             df = pd.DataFrame(table_data)
             
-            # Click row to select, then delete
             st.markdown("#### Click a row to select, then press delete:")
+            # Use columns without the HTML Op column for selection
+            df_display = df[['#', 'Type', 'Area', 'Centroid']].copy()
+            df_display['Op'] = [c['operation'].upper() for c in st.session_state.components]
+            df_display = df_display[['#', 'Op', 'Type', 'Area', 'Centroid']]
+            
             selection = st.dataframe(
-                df, 
+                df_display, 
                 use_container_width=True, 
                 hide_index=True,
                 selection_mode="single-row",
@@ -444,23 +499,56 @@ elif page == "2D Analysis":
             
             if selection.selection.rows:
                 selected_row = selection.selection.rows[0]
-                col_del, col_spacer = st.columns([1, 3])
+                comp = st.session_state.components[selected_row]
+                op_text = "🟢 ADD" if comp['operation'] == 'add' else "🔴 CUT"
+                col_del, col_info = st.columns([1, 3])
                 with col_del:
                     if st.button("🗑️ Delete Selected", type="secondary"):
                         st.session_state.components.pop(selected_row)
                         st.rerun()
-                st.info(f"Selected: #{selected_row + 1} - {st.session_state.components[selected_row]['type']}")
+                with col_info:
+                    st.info(f"Selected: #{selected_row+1} - {comp['type']} ({op_text})")
             
-            # LIVE PREVIEW
+            # LIVE PREVIEW with add/cut coloring
             st.markdown("### Live Preview")
             shapes_only = [c['shape'] for c in st.session_state.components]
-            results = analyzer.analyze_composite_2d(shapes_only)
-            fig = plotter.plot_composite_with_centroid(shapes_only, results)
+            operations = [c['operation'] for c in st.session_state.components]
+            
+            # Calculate composite with add/cut
+            total_area = 0
+            weighted_x = 0
+            weighted_y = 0
+            for shape, op in zip(shapes_only, operations):
+                area = shape.get_area()
+                centroid = shape.get_centroid()
+                if op == 'add':
+                    total_area += area
+                    weighted_x += area * centroid[0]
+                    weighted_y += area * centroid[1]
+                else:
+                    total_area -= area
+                    weighted_x -= area * centroid[0]
+                    weighted_y -= area * centroid[1]
+            
+            if total_area > 0:
+                com_x = weighted_x / total_area
+                com_y = weighted_y / total_area
+            else:
+                com_x, com_y = 0, 0
+            
+            results = {
+                'total_area': total_area,
+                'centroid_x': com_x,
+                'centroid_y': com_y
+            }
+            
+            # Use composite plotter with add/cut colors
+            fig = plotter.plot_composite_with_centroid(shapes_only, results, operations)
             st.plotly_chart(fig, use_container_width=True, key="live_composite")
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Area", f"{results['total_area']:.2f} mm²")
+                st.metric("Net Area", f"{results['total_area']:.2f} mm²")
             with col2:
                 st.metric("Centroid X", f"{results['centroid_x']:.2f} mm")
             with col3:
@@ -554,7 +642,6 @@ elif page == "3D Analysis":
             pos_z = st.number_input("Position Z", value=0.0)
             shape.set_position(pos_x, pos_y, pos_z)
         
-        # LIVE PREVIEW
         st.markdown("### Live Preview")
         analyzer = COMAnalyzer()
         results = analyzer.analyze_3d(shape)
@@ -584,6 +671,169 @@ elif page == "3D Analysis":
             else:
                 stability, stability_class = "Potentially Unstable", "status-unstable"
             st.markdown(f'<div class="kpi-card"><h4>Stability: <span class="{stability_class}">{stability}</span></h4><p>Centroid height: {results["centroid_z"]:.2f} mm</p></div>', unsafe_allow_html=True)
+    
+    elif mode == "Composite Geometry":
+        st.markdown("### 3D Composite Builder")
+        
+        if 'components_3d' not in st.session_state:
+            st.session_state.components_3d = []
+        
+        with st.expander("➕ Add 3D Component", expanded=True):
+            comp_type = st.selectbox("Component Type", ["Cube", "Box", "Sphere", "Cylinder", "Cone", "Pyramid"])
+            
+            operation = st.radio(
+                "Operation",
+                ["🟢 Add Material", "🔴 Cut Hole"],
+                horizontal=True,
+                help="Add: adds to total volume. Cut: subtracts from total volume"
+            )
+            is_add = (operation == "🟢 Add Material")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if comp_type == "Cube":
+                    l = st.number_input("Length", min_value=0.1, value=5.0, key="c3d_l")
+                    w = st.number_input("Width", min_value=0.1, value=5.0, key="c3d_w")
+                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
+                elif comp_type == "Box":
+                    l = st.number_input("Length", min_value=0.1, value=6.0, key="c3d_l")
+                    w = st.number_input("Width", min_value=0.1, value=4.0, key="c3d_w")
+                    h = st.number_input("Height", min_value=0.1, value=3.0, key="c3d_h")
+                elif comp_type == "Sphere":
+                    r = st.number_input("Radius", min_value=0.1, value=3.0, key="c3d_r")
+                elif comp_type == "Cylinder":
+                    r = st.number_input("Radius", min_value=0.1, value=2.0, key="c3d_r")
+                    h = st.number_input("Height", min_value=0.1, value=6.0, key="c3d_h")
+                elif comp_type == "Cone":
+                    r = st.number_input("Base Radius", min_value=0.1, value=2.0, key="c3d_r")
+                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
+                elif comp_type == "Pyramid":
+                    bl = st.number_input("Base Length", min_value=0.1, value=4.0, key="c3d_bl")
+                    bw = st.number_input("Base Width", min_value=0.1, value=4.0, key="c3d_bw")
+                    h = st.number_input("Height", min_value=0.1, value=5.0, key="c3d_h")
+            
+            with col2:
+                px = st.number_input("Position X", value=0.0, key="c3d_px")
+                py = st.number_input("Position Y", value=0.0, key="c3d_py")
+                pz = st.number_input("Position Z", value=0.0, key="c3d_pz")
+            
+            op_label = "➕ Add" if is_add else "🔴 Cut"
+            if st.button(f"{op_label} Component"):
+                if comp_type == "Cube":
+                    shape = Cube(l, w, h, px, py, pz)
+                elif comp_type == "Box":
+                    shape = Box(l, w, h, px, py, pz)
+                elif comp_type == "Sphere":
+                    shape = Sphere(r, px, py, pz)
+                elif comp_type == "Cylinder":
+                    shape = Cylinder(r, h, px, py, pz)
+                elif comp_type == "Cone":
+                    shape = Cone(r, h, px, py, pz)
+                elif comp_type == "Pyramid":
+                    shape = Pyramid(bl, bw, h, px, py, pz)
+                
+                comp_info = {
+                    'name': f"Comp {len(st.session_state.components_3d)+1}",
+                    'type': comp_type,
+                    'shape': shape,
+                    'operation': 'add' if is_add else 'cut'
+                }
+                st.session_state.components_3d.append(comp_info)
+                st.rerun()
+        
+        if st.session_state.components_3d:
+            st.markdown("### 3D Components Table")
+            
+            table_data = []
+            for i, comp in enumerate(st.session_state.components_3d):
+                shape = comp['shape']
+                vol_val = shape.get_volume()
+                sign = "+" if comp['operation'] == 'add' else "-"
+                table_data.append({
+                    '#': i+1,
+                    'Op': comp['operation'].upper(),
+                    'Type': comp['type'],
+                    'Volume': f"{sign}{vol_val:.2f}",
+                    'Centroid': f"({shape.get_centroid()[0]:.1f}, {shape.get_centroid()[1]:.1f}, {shape.get_centroid()[2]:.1f})"
+                })
+            
+            df = pd.DataFrame(table_data)
+            
+            st.markdown("#### Click a row to select, then press delete:")
+            selection = st.dataframe(
+                df, 
+                use_container_width=True, 
+                hide_index=True,
+                selection_mode="single-row",
+                on_select="rerun",
+                key="component_table_3d"
+            )
+            
+            if selection.selection.rows:
+                selected_row = selection.selection.rows[0]
+                if st.button("🗑️ Delete Selected", type="secondary"):
+                    st.session_state.components_3d.pop(selected_row)
+                    st.rerun()
+            
+            # Calculate composite 3D
+            shapes_only = [c['shape'] for c in st.session_state.components_3d]
+            operations = [c['operation'] for c in st.session_state.components_3d]
+            
+            total_volume = 0
+            weighted_x = 0
+            weighted_y = 0
+            weighted_z = 0
+            for shape, op in zip(shapes_only, operations):
+                vol = shape.get_volume()
+                centroid = shape.get_centroid()
+                if op == 'add':
+                    total_volume += vol
+                    weighted_x += vol * centroid[0]
+                    weighted_y += vol * centroid[1]
+                    weighted_z += vol * centroid[2]
+                else:
+                    total_volume -= vol
+                    weighted_x -= vol * centroid[0]
+                    weighted_y -= vol * centroid[1]
+                    weighted_z -= vol * centroid[2]
+            
+            if total_volume > 0:
+                com_x = weighted_x / total_volume
+                com_y = weighted_y / total_volume
+                com_z = weighted_z / total_volume
+            else:
+                com_x, com_y, com_z = 0, 0, 0
+            
+            results_3d = {
+                'volume': total_volume,
+                'centroid_x': com_x,
+                'centroid_y': com_y,
+                'centroid_z': com_z
+            }
+            
+            st.markdown("### Live Preview (3D Composite)")
+            plotter_3d = Plotter3D()
+            # Plot first add shape as reference
+            for shape, op in zip(shapes_only, operations):
+                if op == 'add':
+                    fig = plotter_3d.plot_3d_shape_with_centroid(shape, results_3d)
+                    st.plotly_chart(fig, use_container_width=True, key="live_3d_composite")
+                    break
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Net Volume", f"{results_3d['volume']:.2f} mm³")
+            with col2:
+                st.metric("Centroid X", f"{results_3d['centroid_x']:.2f} mm")
+            with col3:
+                st.metric("Centroid Y", f"{results_3d['centroid_y']:.2f} mm")
+            with col4:
+                st.metric("Centroid Z", f"{results_3d['centroid_z']:.2f} mm")
+            
+            if st.button("💾 Save to Report", type="primary"):
+                st.session_state.com_data = results_3d
+                st.success("Results saved! Go to Report Generator to export.")
 
 elif page == "STL Import":
     st.markdown(f"## {translations['stl_import']}")
@@ -669,5 +919,4 @@ st.markdown(
     "Center of Mass & Centroid Analysis System v1.0 | "
     "© 2024 Engineering Analysis Tools"
     "</div>",
-    unsafe_allow_html=True
-)
+    unsafe_allow_html=True)
