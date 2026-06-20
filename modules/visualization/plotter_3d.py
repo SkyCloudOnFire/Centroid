@@ -61,7 +61,7 @@ class Plotter3D:
         ))
     
     def _get_isometric_layout(self, title: str) -> dict:
-        """Get standard isometric layout for engineering views"""
+        """Get standard isometric layout for engineering views (orthographic)"""
         return dict(
             title=title,
             scene=dict(
@@ -70,8 +70,9 @@ class Plotter3D:
                 zaxis_title="Z (mm)",
                 aspectmode='data',
                 camera=dict(
-                    eye=dict(x=1.8, y=1.8, z=1.8),  # True isometric
-                    up=dict(x=0, y=0, z=1)
+                    eye=dict(x=1.8, y=1.8, z=1.8),
+                    up=dict(x=0, y=0, z=1),
+                    projection=dict(type='orthographic')
                 ),
                 xaxis=dict(showgrid=True, gridcolor='lightgray'),
                 yaxis=dict(showgrid=True, gridcolor='lightgray'),
